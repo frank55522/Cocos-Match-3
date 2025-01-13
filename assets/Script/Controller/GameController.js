@@ -12,12 +12,17 @@ cc.Class({
       default: null,
       type: cc.Node
     },
-    audioSource: {
+    audioSource: { 
+      default: null, // 設置默認值
       type: cc.AudioSource
     }
   },
   // use this for initialization
   onLoad: function () {
+    if (!this.audioSource) {
+      // 動態查找並初始化
+      this.audioSource = cc.find("Canvas/AudioSource").getComponent(cc.AudioSource);
+    }
     let audioButton = this.node.parent.getChildByName('audioButton')
     audioButton.on('click', this.callback, this)
     this.gameModel = new GameModel();
