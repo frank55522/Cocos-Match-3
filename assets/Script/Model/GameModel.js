@@ -9,6 +9,8 @@ export default class GameModel {
     this.lastPos = cc.v2(-1, -1);
     this.cellTypeNum = 5;
     this.cellCreateType = []; // 升成种类只在这个数组里面查找
+    this.movesLeft = 10;
+    this.isGameOver = false;
   }
 
   init(cellTypeNum) {
@@ -159,6 +161,10 @@ export default class GameModel {
   // controller调用的主要入口
   // 点击某个格子
   selectCell(pos) {
+    if (this.isGameOver) {
+      console.log("遊戲已結束，無法進行操作。"); // 提示遊戲已結束
+      return [[], []];
+    }
     this.changeModels = [];// 发生改变的model，将作为返回值，给view播动作
     this.effectsQueue = []; // 动物消失，爆炸等特效
     var lastPos = this.lastPos;
@@ -187,6 +193,11 @@ export default class GameModel {
       return [this.changeModels];
     }
     else {
+      this.movesLeft--;
+      console.log(`剩餘步數: ${this.movesLeft}`);
+      if (this.movesLeft <= 0) {
+        this.endGame();
+      }
       this.lastPos = cc.v2(-1, -1);
       curClickCell.moveTo(lastPos, this.curTime);
       lastClickCell.moveTo(pos, this.curTime);
@@ -465,5 +476,9 @@ export default class GameModel {
     this.cells[y][x] = null;
   }
 
+  endGame() {
+    this.isGameOver = true;
+    console.log("遊戲結束！步數已用完。");
+  }
 }
 
