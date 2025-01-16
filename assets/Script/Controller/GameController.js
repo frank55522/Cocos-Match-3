@@ -3,6 +3,7 @@ import Toast from '../Utils/Toast';
 
 cc.Class({
   extends: cc.Component,
+
   properties: {
     grid: {
       default: null,
@@ -17,6 +18,7 @@ cc.Class({
       type: cc.AudioSource
     }
   },
+
   // use this for initialization
   onLoad: function () {
     if (!this.audioSource) {
@@ -44,5 +46,10 @@ cc.Class({
   },
   cleanCmd: function () {
     this.gameModel.cleanCmd();
+  },
+
+  getGameModel() {
+    console.log("getGameModel called");
+    return this.gameModel;
   }
 });

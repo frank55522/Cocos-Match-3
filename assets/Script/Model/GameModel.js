@@ -11,6 +11,7 @@ export default class GameModel {
     this.cellCreateType = []; // 升成种类只在这个数组里面查找
     this.movesLeft = 10;
     this.isGameOver = false;
+    this.goalLeft = 87;
   }
 
   init(cellTypeNum) {
@@ -474,6 +475,8 @@ export default class GameModel {
     model.toDie(this.curTime + shakeTime);
     this.addCrushEffect(this.curTime + shakeTime, cc.v2(model.x, model.y), step);
     this.cells[y][x] = null;
+    this.goalLeft = Math.max(0, this.goalLeft - 1);
+    console.log("goal: " + this.goalLeft);
   }
 
   endGame() {
