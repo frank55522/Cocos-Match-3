@@ -12,6 +12,7 @@ export default class GameModel {
     this.movesLeft = 10;
     this.isGameOver = false;
     this.goalLeft = 87;
+    this.totalCrushed = []; // 記錄每一輪要消除的數量
   }
 
   init(cellTypeNum) {
@@ -212,7 +213,7 @@ export default class GameModel {
   processCrush(checkPoint) {
     let cycleCount = 0;
     while (checkPoint.length > 0) {
-      let totalCrushed = 0; // 記錄這一輪要消除的數量
+      this.totalCrushed.push(0);
       let bombModels = [];
       if (cycleCount == 0 && checkPoint.length == 2) { //特殊消除
         let pos1 = checkPoint[0];
@@ -250,12 +251,13 @@ export default class GameModel {
           }
         }
         this.createNewCell(crushPoint, newCellStatus, newCellType);
-        totalCrushed += result.length; // 累計這一輪消除的格數
       }
       this.processBomb(bombModels, cycleCount);
       // **在這一輪消除動畫開始時，更新 UI 數字**
+      console.log(`wait ${this.curTime}`);
       setTimeout(() => {
-        this.goalLeft = Math.max(0, this.goalLeft - totalCrushed);
+        this.goalLeft = Math.max(0, this.goalLeft - this.totalCrushed[0]);
+        this.totalCrushed.shift(); // delete first element
         console.log(`goalLeft: ${this.goalLeft}`);
       }, this.curTime * 1000); // **確保這次 UI 更新與動畫時間一致**
       this.curTime += ANITIME.DIE;
@@ -476,6 +478,8 @@ export default class GameModel {
     if (needShake) {
         model.toShake(this.curTime);
     }
+
+    this.totalCrushed[this.totalCrushed.length - 1]++;
 
     let shakeTime = needShake ? ANITIME.DIE_SHAKE : 0;
     model.toDie(this.curTime + shakeTime);
