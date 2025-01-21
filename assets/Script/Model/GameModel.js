@@ -13,6 +13,7 @@ export default class GameModel {
     this.isGameOver = false;
     this.goalLeft = 87;
     this.totalCrushed = 0; // 記錄一輪要消除的數量
+    this.coin = 0;
   }
 
   init(cellTypeNum) {
@@ -484,11 +485,24 @@ export default class GameModel {
     model.toDie(this.curTime + shakeTime);
     this.addCrushEffect(this.curTime + shakeTime, cc.v2(model.x, model.y), step);
     this.cells[y][x] = null;
-}
+  }
 
   endGame() {
     this.isGameOver = true;
     console.log("遊戲結束！步數已用完。");
+  }
+
+  setCoin(amount) {
+    this.coin = Math.max(0, amount); // 避免負數
+    console.log(`金幣數量更新：${this.coin}`);
+  }
+
+  getCoin() {
+      return this.coin;
+  }
+
+  earnCoin(amount) {
+    this.setCoin(this.getCoin() + amount);
   }
 }
 

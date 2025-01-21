@@ -51,5 +51,13 @@ cc.Class({
   getGameModel() {
     console.log("getGameModel called");
     return this.gameModel;
+  },
+
+  getCoin() {
+    return this.gameModel.getCoin();
+  },
+
+  setCoin(amount) {
+      this.gameModel.setCoin(amount);
   }
 });
