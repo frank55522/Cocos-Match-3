@@ -260,10 +260,20 @@ export default class GameModel {
         this.goalLeft = Math.max(0, this.goalLeft - copyTotalCrushed);
         console.log(`goalLeft: ${this.goalLeft}`);
       }, this.curTime * 1000); // **確保這次 UI 更新與動畫時間一致**
+
+      setTimeout(() => {
+        this.earnCoinsByCrush(copyTotalCrushed, cycleCount);
+      }, this.curTime * 1000);
+
       this.curTime += ANITIME.DIE;
       checkPoint = this.down();
       cycleCount++;
     }
+    setTimeout(() => {
+      if (!this.isGameOver && this.goalLeft == 0) {
+        this.levelComplete();
+      }
+    }, this.curTime * 1000);
   }
 
   //生成新cell
@@ -487,9 +497,34 @@ export default class GameModel {
     this.cells[y][x] = null;
   }
 
+  earnCoinsByCrush(crushQuantity, step) {
+    let totalEarn = 0;
+
+    if (crushQuantity > 12)
+      totalEarn += 5;
+    else if (crushQuantity > 9)
+      totalEarn += 3
+    else if (crushQuantity > 3)
+      totalEarn += 1;
+    
+    totalEarn += Math.floor(step / 3);
+
+    this.earnCoin(totalEarn);
+  }
+
   endGame() {
     this.isGameOver = true;
     console.log("遊戲結束！步數已用完。");
+  }
+
+  levelComplete() {
+    this.isGameOver = true;
+
+    // movesLeft -> coins
+    let totalEarn = this.movesLeft * 15;
+    this.earnCoin(totalEarn);
+    console.log(`已通關，剩餘步數(${this.movesLeft})轉成金幣(${totalEarn})`);
+    this.movesLeft = 0;
   }
 
   setCoin(amount) {
