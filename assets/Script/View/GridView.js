@@ -225,13 +225,11 @@ cc.Class({
     },
     playEffect: function(effectsQueue){
         this.effectLayer.getComponent("EffectLayer").playEffects(effectsQueue);
+    },
+
+    //called every frame, uncomment this function to activate update callback
+    update: function (dt) {
+        if (!this.isInPlayAni)
+            this.controller.checkLevelComplete();
     }
-
-
-
-
-    // called every frame, uncomment this function to activate update callback
-    // update: function (dt) {
-
-    // },
 });

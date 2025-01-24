@@ -269,11 +269,11 @@ export default class GameModel {
       checkPoint = this.down();
       cycleCount++;
     }
-    setTimeout(() => {
-      if (!this.isGameOver && this.goalLeft == 0) {
-        this.levelComplete();
-      }
-    }, this.curTime * 1000);
+    // setTimeout(() => {
+    //   if (!this.isGameOver && this.goalLeft == 0) {
+    //     this.levelComplete();
+    //   }
+    // }, this.curTime * 1000);
   }
 
   //生成新cell
@@ -517,6 +517,10 @@ export default class GameModel {
     console.log("遊戲結束！步數已用完。");
   }
 
+  checkLevelComplete() {
+    if (!this.isGameOver && this.goalLeft == 0)
+      this.levelComplete();
+  }
   levelComplete() {
     this.isGameOver = true;
 

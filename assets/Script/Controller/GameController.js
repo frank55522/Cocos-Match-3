@@ -58,6 +58,10 @@ cc.Class({
   },
 
   setCoin(amount) {
-      this.gameModel.setCoin(amount);
+    this.gameModel.setCoin(amount);
+  },
+
+  checkLevelComplete() {
+    this.gameModel.checkLevelComplete();
   }
 });
