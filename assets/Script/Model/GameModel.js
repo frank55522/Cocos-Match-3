@@ -213,6 +213,7 @@ export default class GameModel {
   // 消除
   processCrush(checkPoint) {
     let cycleCount = 0;
+    let totalSteps = 0; // 用來記錄 step 數量，最後結算 step 獎勵
     while (checkPoint.length > 0) {
       this.totalCrushed = 0;
       let bombModels = [];
@@ -259,16 +260,19 @@ export default class GameModel {
       setTimeout(() => {
         this.goalLeft = Math.max(0, this.goalLeft - copyTotalCrushed);
         console.log(`goalLeft: ${this.goalLeft}`);
+        this.earnCoinsByCrush(copyTotalCrushed); // **這裡先計算這次的金幣**
       }, this.curTime * 1000); // **確保這次 UI 更新與動畫時間一致**
-
-      setTimeout(() => {
-        this.earnCoinsByCrush(copyTotalCrushed, cycleCount);
-      }, this.curTime * 1000);
 
       this.curTime += ANITIME.DIE;
       checkPoint = this.down();
       cycleCount++;
     }
+
+    // **當所有消除完成後，最後再計算 step 給的金幣**
+    totalSteps = cycleCount;
+    setTimeout(() => {
+        this.earnCoinsByStep(totalSteps);
+    }, this.curTime * 1000);
     // setTimeout(() => {
     //   if (!this.isGameOver && this.goalLeft == 0) {
     //     this.levelComplete();
@@ -497,20 +501,24 @@ export default class GameModel {
     this.cells[y][x] = null;
   }
 
-  earnCoinsByCrush(crushQuantity, step) {
+  earnCoinsByCrush(crushQuantity) {
     let totalEarn = 0;
 
     if (crushQuantity > 12)
-      totalEarn += 5;
+        totalEarn += 5;
     else if (crushQuantity > 9)
-      totalEarn += 3
+        totalEarn += 3;
     else if (crushQuantity > 3)
-      totalEarn += 1;
-    
-    totalEarn += Math.floor(step / 3);
+        totalEarn += 1;
 
     this.earnCoin(totalEarn);
   }
+
+  earnCoinsByStep(totalSteps) {
+    let stepBonus = Math.floor(totalSteps / 3);
+    this.earnCoin(stepBonus);
+  }
+
 
   endGame() {
     this.isGameOver = true;
