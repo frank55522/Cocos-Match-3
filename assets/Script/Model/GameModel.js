@@ -524,18 +524,24 @@ export default class GameModel {
   levelComplete() {
     this.isGameOver = true;
 
-    // movesLeft -> coins
-    let totalEarn = this.movesLeft * 15;
-    this.earnCoin(totalEarn);
-    console.log(`已通關，剩餘步數(${this.movesLeft})轉成金幣(${totalEarn})`);
-    this.movesLeft = 0;
+    // 引爆場上剩餘特殊動物
+    // To do
+
+    console.log(`已通關，剩餘步數(${this.movesLeft})轉成金幣(${this.movesLeft * 15})`);
+    this.leftMovesToCoins();
+  }
+  leftMovesToCoins() {
+    if (this.movesLeft > 0) {
+      this.movesLeft--;
+      this.earnCoin(15);
+      setTimeout(() => { this.leftMovesToCoins(); }, 50);
+    }
   }
 
   setCoin(amount) {
     this.coin = Math.max(0, amount); // 避免負數
     console.log(`金幣數量更新：${this.coin}`);
   }
-
   getCoin() {
       return this.coin;
   }
