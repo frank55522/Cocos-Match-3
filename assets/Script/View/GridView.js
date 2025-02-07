@@ -201,6 +201,8 @@ cc.Class({
         this.isInPlayAni = true;
         this.node.runAction(cc.sequence(cc.delayTime(time),cc.callFunc(function(){
             this.isInPlayAni = false;
+            //console.log("call controller function checkEndGame");
+            this.controller.checkEndGame();
             this.audioUtils.playContinuousMatch(step);
         }, this)));
     },
@@ -228,8 +230,7 @@ cc.Class({
     },
 
     //called every frame, uncomment this function to activate update callback
-    update: function (dt) {
-        if (!this.isInPlayAni)
-            this.controller.checkLevelComplete();
-    }
+    // update: function (dt) {
+    //     
+    // }
 });

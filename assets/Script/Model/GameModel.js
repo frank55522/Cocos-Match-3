@@ -198,9 +198,6 @@ export default class GameModel {
     else {
       this.movesLeft--;
       console.log(`剩餘步數: ${this.movesLeft}`);
-      if (this.movesLeft <= 0) {
-        this.endGame();
-      }
       this.lastPos = cc.v2(-1, -1);
       curClickCell.moveTo(lastPos, this.curTime);
       lastClickCell.moveTo(pos, this.curTime);
@@ -519,16 +516,20 @@ export default class GameModel {
     this.earnCoin(stepBonus);
   }
 
-
+  checkEndGame() {
+    //console.log("gameModel do checkEndGame");
+    if (!this.isGameOver) {
+      if (this.goalLeft == 0)
+        this.levelComplete();
+      else if (this.movesLeft == 0)
+        this.endGame();
+    }
+  }
   endGame() {
     this.isGameOver = true;
     console.log("遊戲結束！步數已用完。");
   }
 
-  checkLevelComplete() {
-    if (!this.isGameOver && this.goalLeft == 0)
-      this.levelComplete();
-  }
   levelComplete() {
     this.isGameOver = true;
 
