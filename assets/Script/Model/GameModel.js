@@ -1,6 +1,7 @@
 import CellModel from "./CellModel";
 import { mergePointArray, exclusivePoint } from "../Utils/ModelUtils"
 import { CELL_TYPE, CELL_BASENUM, CELL_STATUS, GRID_WIDTH, GRID_HEIGHT, ANITIME } from "./ConstValue";
+import Toast from '../Utils/Toast';
 
 export default class GameModel {
   constructor() {
@@ -209,73 +210,72 @@ export default class GameModel {
   }
   // 消除
   processCrush(checkPoint) {
-    let cycleCount = 0;
-    let totalSteps = 0; // 用來記錄 step 數量，最後結算 step 獎勵
+    let cycleCount = 1;
     while (checkPoint.length > 0) {
-      this.totalCrushed = 0;
-      let bombModels = [];
-      if (cycleCount == 0 && checkPoint.length == 2) { //特殊消除
-        let pos1 = checkPoint[0];
-        let pos2 = checkPoint[1];
-        let model1 = this.cells[pos1.y][pos1.x];
-        let model2 = this.cells[pos2.y][pos2.x];
-        if (model1.status == CELL_STATUS.BIRD || model2.status == CELL_STATUS.BIRD) {
-          let bombModel = null;
-          if (model1.status == CELL_STATUS.BIRD) {
-            model1.type = model2.type;
-            bombModels.push(model1);
-          }
-          else {
-            model2.type = model1.type;
-            bombModels.push(model2);
-          }
+        this.totalCrushed = 0;
+        let bombModels = [];
 
+        if (cycleCount == 1 && checkPoint.length == 2) { // 特殊消除
+            let pos1 = checkPoint[0];
+            let pos2 = checkPoint[1];
+            let model1 = this.cells[pos1.y][pos1.x];
+            let model2 = this.cells[pos2.y][pos2.x];
+            if (model1.status == CELL_STATUS.BIRD || model2.status == CELL_STATUS.BIRD) {
+                if (model1.status == CELL_STATUS.BIRD) {
+                    model1.type = model2.type;
+                    bombModels.push(model1);
+                } else {
+                    model2.type = model1.type;
+                    bombModels.push(model2);
+                }
+            }
         }
-      }
-      for (var i in checkPoint) {
-        var pos = checkPoint[i];
-        if (!this.cells[pos.y][pos.x]) {
-          continue;
-        }
-        var [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
 
-        if (result.length < 3) {
-          continue;
-        }
-        for (var j in result) {
-          var model = this.cells[result[j].y][result[j].x];
-          this.crushCell(result[j].x, result[j].y, false, cycleCount);
-          if (model.status != CELL_STATUS.COMMON) {
-            bombModels.push(model);
-          }
-        }
-        this.createNewCell(crushPoint, newCellStatus, newCellType);
-      }
-      this.processBomb(bombModels, cycleCount);
-      // **在這一輪消除動畫開始時，更新 UI 數字**
-      let copyTotalCrushed = this.totalCrushed;
-      setTimeout(() => {
-        this.goalLeft = Math.max(0, this.goalLeft - copyTotalCrushed);
-        console.log(`goalLeft: ${this.goalLeft}`);
-        this.earnCoinsByCrush(copyTotalCrushed); // **這裡先計算這次的金幣**
-      }, this.curTime * 1000); // **確保這次 UI 更新與動畫時間一致**
+        for (var i in checkPoint) {
+            var pos = checkPoint[i];
+            if (!this.cells[pos.y][pos.x]) {
+                continue;
+            }
+            var [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
 
-      this.curTime += ANITIME.DIE;
-      checkPoint = this.down();
-      cycleCount++;
+            if (result.length < 3) {
+                continue;
+            }
+            for (var j in result) {
+                var model = this.cells[result[j].y][result[j].x];
+                this.crushCell(result[j].x, result[j].y, false, cycleCount);
+                if (model.status != CELL_STATUS.COMMON) {
+                    bombModels.push(model);
+                }
+            }
+            this.createNewCell(crushPoint, newCellStatus, newCellType);
+        }
+
+        this.processBomb(bombModels, cycleCount);
+
+        // **更新 UI**
+        let copyTotalCrushed = this.totalCrushed;
+        let copyCycleCount = cycleCount;
+
+        this.curTime += ANITIME.DIE;
+        let nextCheckPoint = this.down();
+        let hasNextCrush = nextCheckPoint.length > 0;
+        
+        setTimeout(() => {
+            this.goalLeft = Math.max(0, this.goalLeft - copyTotalCrushed);
+            console.log(`goalLeft: ${this.goalLeft}`);
+            this.earnCoinsByCrush(copyTotalCrushed);
+
+            // **顯示 Combo**
+            if (copyCycleCount > 1 && hasNextCrush) {
+                Toast(`Combo ${copyCycleCount}!`, { duration: 1, gravity: "CENTER" });
+            }
+        }, this.curTime * 1000);
+
+        checkPoint = nextCheckPoint;
+        cycleCount++;
     }
-
-    // **當所有消除完成後，最後再計算 step 給的金幣**
-    totalSteps = cycleCount;
-    setTimeout(() => {
-        this.earnCoinsByStep(totalSteps);
-    }, this.curTime * 1000);
-    // setTimeout(() => {
-    //   if (!this.isGameOver && this.goalLeft == 0) {
-    //     this.levelComplete();
-    //   }
-    // }, this.curTime * 1000);
-  }
+   }
 
   //生成新cell
   createNewCell(pos, status, type) {
