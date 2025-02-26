@@ -15,6 +15,10 @@ export default class GameModel {
     this.goalLeft = 87;
     this.totalCrushed = 0; // 記錄一輪要消除的數量
     this.coin = 0;
+    this.thinkingTimeLimit = 10; // 玩家有 10 秒時間思考
+    this.currentThinkingTime = this.thinkingTimeLimit;
+    this.thinkingTimer = null;
+    this.isProcessing = false; // 是否正在執行消除動畫
   }
 
   init(cellTypeNum) {
@@ -169,6 +173,9 @@ export default class GameModel {
       console.log("遊戲已結束，無法進行操作。"); // 提示遊戲已結束
       return [[], []];
     }
+    if (this.isProcessing) {
+      return [[], []]; // 避免動畫期間觸發操作
+    }
     this.changeModels = [];// 发生改变的model，将作为返回值，给view播动作
     this.effectsQueue = []; // 动物消失，爆炸等特效
     var lastPos = this.lastPos;
@@ -211,11 +218,13 @@ export default class GameModel {
   // 消除
   processCrush(checkPoint) {
     let cycleCount = 1;
+    this.isProcessing = true;
+
     while (checkPoint.length > 0) {
         this.totalCrushed = 0;
         let bombModels = [];
 
-        if (cycleCount == 1 && checkPoint.length == 2) { // 特殊消除
+        if (cycleCount == 1 && checkPoint.length == 2) {
             let pos1 = checkPoint[0];
             let pos2 = checkPoint[1];
             let model1 = this.cells[pos1.y][pos1.x];
@@ -233,14 +242,10 @@ export default class GameModel {
 
         for (var i in checkPoint) {
             var pos = checkPoint[i];
-            if (!this.cells[pos.y][pos.x]) {
-                continue;
-            }
+            if (!this.cells[pos.y][pos.x]) continue;
             var [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
+            if (result.length < 3) continue;
 
-            if (result.length < 3) {
-                continue;
-            }
             for (var j in result) {
                 var model = this.cells[result[j].y][result[j].x];
                 this.crushCell(result[j].x, result[j].y, false, cycleCount);
@@ -253,29 +258,35 @@ export default class GameModel {
 
         this.processBomb(bombModels, cycleCount);
 
-        // **更新 UI**
         let copyTotalCrushed = this.totalCrushed;
         let copyCycleCount = cycleCount;
 
         this.curTime += ANITIME.DIE;
         let nextCheckPoint = this.down();
         let hasNextCrush = nextCheckPoint.length > 0;
-        
+
         setTimeout(() => {
             this.goalLeft = Math.max(0, this.goalLeft - copyTotalCrushed);
             console.log(`goalLeft: ${this.goalLeft}`);
             this.earnCoinsByCrush(copyTotalCrushed);
 
-            // **顯示 Combo**
             if (copyCycleCount > 1 && hasNextCrush) {
                 Toast(`Combo ${copyCycleCount}!`, { duration: 1, gravity: "CENTER" });
+            }
+
+            this.isProcessing = false;
+
+            if (this.goalLeft > 0) {
+                this.startThinkingTimer();
+            } else {
+                this.levelComplete();
             }
         }, this.curTime * 1000);
 
         checkPoint = nextCheckPoint;
         cycleCount++;
     }
-   }
+  }
 
   //生成新cell
   createNewCell(pos, status, type) {
@@ -557,6 +568,44 @@ export default class GameModel {
 
   earnCoin(amount) {
     this.setCoin(this.getCoin() + amount);
+  }
+
+  startThinkingTimer() {
+    if (this.goalLeft === 0 || this.isGameOver) {
+        return;
+    }
+
+    if (this.thinkingTimer) {
+        clearInterval(this.thinkingTimer);
+    }
+    this.currentThinkingTime = this.thinkingTimeLimit;
+
+    this.thinkingTimer = setInterval(() => {
+        if (this.goalLeft === 0) {
+            clearInterval(this.thinkingTimer);
+            return;
+        }
+
+        this.currentThinkingTime--;
+
+        let thinkingTimeView = cc.find("Canvas/ThinkingTimeLabel").getComponent("ThinkingTimeView");
+        if (thinkingTimeView) {
+            thinkingTimeView.updateThinkingTime();
+        }
+
+        if (this.currentThinkingTime <= 0) {
+            this.handleThinkingTimeout();
+        }
+    }, 1000);
+  }
+
+  handleThinkingTimeout() {
+    if (this.goalLeft === 0) {
+        return;
+    }
+
+    clearInterval(this.thinkingTimer);
+    // this.applyPenalty();
   }
 }
 

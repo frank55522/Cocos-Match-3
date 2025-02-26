@@ -6,18 +6,19 @@ cc.Class({
 
   properties: {
     grid: {
-      default: null,
-      type: cc.Node
+        default: null,
+        type: cc.Node
     },
     audioButton: {
-      default: null,
-      type: cc.Node
+        default: null,
+        type: cc.Node
     },
     audioSource: { 
-      default: null, // 設置默認值
-      type: cc.AudioSource
+        default: null, // 設置默認值
+        type: cc.AudioSource
     }
   },
+
 
   // use this for initialization
   onLoad: function () {
@@ -33,6 +34,7 @@ cc.Class({
     gridScript.setController(this);
     gridScript.initWithCellModels(this.gameModel.getCells());
     this.audioSource = cc.find('Canvas/GameScene')._components[1].audio;
+    this.gameModel.startThinkingTimer();
   },
 
   callback: function () {
