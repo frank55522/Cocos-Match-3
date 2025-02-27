@@ -236,7 +236,7 @@ cc.Class({
             return;
         }
 
-        console.log(`Hint: position${hint.position}, direction${hint.direction}(${hint.debug})`);
+        console.log(`Hint: position${hint.position}, direction${hint.direction}`);
         // TODO show hint
     },
 
