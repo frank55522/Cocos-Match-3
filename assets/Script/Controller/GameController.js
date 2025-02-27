@@ -30,11 +30,22 @@ cc.Class({
     audioButton.on('click', this.callback, this)
     this.gameModel = new GameModel();
     this.gameModel.init(4);
-    var gridScript = this.grid.getComponent("GridView");
-    gridScript.setController(this);
-    gridScript.initWithCellModels(this.gameModel.getCells());
+    this.gridScript = this.grid.getComponent("GridView");
+    this.gridScript.setController(this);
+    this.gridScript.initWithCellModels(this.gameModel.getCells());
     this.audioSource = cc.find('Canvas/GameScene')._components[1].audio;
     this.gameModel.startThinkingTimer();
+    this.hintTimer = 2;
+  },
+
+  update: function (dt) {
+    if (this.hintTimer > 0) {
+      this.hintTimer -= dt;
+      if (this.hintTimer <= 0) {
+        // this.gridScript.showHint(null); // testing
+        this.gridScript.showHint(this.gameModel.findValidMove());
+      }
+    }
   },
 
   callback: function () {
@@ -66,5 +77,14 @@ cc.Class({
   checkEndGame() {
     //console.log("call gameModel function checkEndGame");
     this.gameModel.checkEndGame();
-  }
+  },
+  isEndGame() {
+    return this.gameModel.isEndGame();
+  },
+
+  resetHintTimer: function() {
+    this.hintTimer = 2;
+  },
+
+  
 });

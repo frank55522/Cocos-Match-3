@@ -204,6 +204,7 @@ cc.Class({
             //console.log("call controller function checkEndGame");
             this.controller.checkEndGame();
             this.audioUtils.playContinuousMatch(step);
+            if (!this.controller.isEndGame()) this.controller.resetHintTimer();
         }, this)));
     },
     // 正常击中格子后的操作
@@ -227,6 +228,16 @@ cc.Class({
     },
     playEffect: function(effectsQueue){
         this.effectLayer.getComponent("EffectLayer").playEffects(effectsQueue);
+    },
+
+    showHint: function(hint) {
+        if (!hint) {
+            console.log("No Solution");
+            return;
+        }
+
+        console.log(`Hint: position${hint.position}, direction${hint.direction}(${hint.debug})`);
+        // TODO show hint
     },
 
     //called every frame, uncomment this function to activate update callback
