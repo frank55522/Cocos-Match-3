@@ -231,12 +231,14 @@ cc.Class({
     },
 
     showHint: function(hint) {
-        if (!hint) {
+        if (hint == []) {
             console.log("No Solution");
             return;
         }
 
-        console.log(`Hint: position${hint.position}, direction${hint.direction}`);
+        console.log("Hint:");
+        for (const position of hint)
+            console.log(position);
         // TODO show hint
     },
 

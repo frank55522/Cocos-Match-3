@@ -609,27 +609,39 @@ export default class GameModel {
     // this.applyPenalty();
   }
 
-  // return value: [position, direction] , no Sol: null
+  // return value: [positions] => [p1, p2, p3] , no Sol: []
   findValidMove() {
-    //console.log(JSON.stringify(this.cells));
-    var up = [1, 0], down = [-1, 0], left = [0, -1], right = [0, 1];
+    //console.log(JSON.stringify(this.cells)); // look board in console
     // find oo
     for (let row = 1; row <= GRID_HEIGHT; row++) {
       for (let col = 1; col <= GRID_WIDTH - 1; col++) {
         if (this.cells[row][col].type === this.cells[row][col+1].type) {
+          let hintPositions = [[row, col], [row, col+1]];
           // check 6 points
-          if (this.isPositionValid(row - 1, col - 1) && this.cells[row][col].type === this.cells[row - 1][col - 1].type)
-            return { position: [row, col-1], direction: down, debug: 1 };
-          if (this.isPositionValid(row, col - 2) && this.cells[row][col].type === this.cells[row][col - 2].type)
-            return { position: [row, col-1], direction: left, debug: 1 };
-          if (this.isPositionValid(row + 1, col - 1) && this.cells[row][col].type === this.cells[row + 1][col - 1].type)
-            return { position: [row, col-1], direction: up, debug: 1 };
-          if (this.isPositionValid(row - 1, col + 2) && this.cells[row][col].type === this.cells[row - 1][col + 2].type)
-            return { position: [row, col+2], direction: down, debug: 1 };
-          if (this.isPositionValid(row, col + 3) && this.cells[row][col].type === this.cells[row][col + 3].type)
-            return { position: [row, col+2], direction: right, debug: 1 };
-          if (this.isPositionValid(row + 1, col + 2) && this.cells[row][col].type === this.cells[row + 1][col + 2].type)
-            return { position: [row, col+2], direction: up, debug: 1 };
+          if (this.isPositionValid(row - 1, col - 1) && this.cells[row][col].type === this.cells[row - 1][col - 1].type) {
+            hintPositions.push([row-1, col-1]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row, col - 2) && this.cells[row][col].type === this.cells[row][col - 2].type) {
+            hintPositions.push([row, col-2]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row + 1, col - 1) && this.cells[row][col].type === this.cells[row + 1][col - 1].type) {
+            hintPositions.push([row+1, col-1]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row - 1, col + 2) && this.cells[row][col].type === this.cells[row - 1][col + 2].type) {
+            hintPositions.push([row-1, col+2]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row, col + 3) && this.cells[row][col].type === this.cells[row][col + 3].type) {
+            hintPositions.push([row, col+3]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row + 1, col + 2) && this.cells[row][col].type === this.cells[row + 1][col + 2].type) {
+            hintPositions.push([row+1, col+2]);
+            return hintPositions;
+          }
         }
       }
     }
@@ -637,11 +649,16 @@ export default class GameModel {
     for (let row = 1; row <= GRID_HEIGHT; row++) {
       for (let col = 2; col <= GRID_WIDTH - 1; col++) {
         if (this.cells[row][col-1].type === this.cells[row][col+1].type) {
+          let hintPositions = [[row, col-1], [row, col+1]];
           // check 2 points
-          if (this.isPositionValid(row - 1, col) && this.cells[row][col - 1].type === this.cells[row - 1][col].type)
-            return { position: [row, col], direction: down, debug: 2 };
-          if (this.isPositionValid(row + 1, col) && this.cells[row][col - 1].type === this.cells[row + 1][col].type)
-            return { position: [row, col], direction: up, debug: 2 };
+          if (this.isPositionValid(row - 1, col) && this.cells[row][col - 1].type === this.cells[row - 1][col].type) {
+            hintPositions.push([row-1, col]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row + 1, col) && this.cells[row][col - 1].type === this.cells[row + 1][col].type) {
+            hintPositions.push([row+1, col]);
+            return hintPositions;
+          }
         }
       }
     }
@@ -649,19 +666,32 @@ export default class GameModel {
     for (let row = 1; row <= GRID_HEIGHT - 1; row++) {
       for (let col = 1; col <= GRID_WIDTH; col++) {
         if (this.cells[row][col].type === this.cells[row+1][col].type) {
+          let hintPositions = [[row, col], [row+1, col]];
           // check 6 points
-          if (this.isPositionValid(row - 1, col - 1) && this.cells[row][col].type === this.cells[row - 1][col - 1].type)
-            return { position: [row-1, col], direction: left, debug: 3 };
-          if (this.isPositionValid(row - 2, col) && this.cells[row][col].type === this.cells[row - 2][col].type)
-            return { position: [row-1, col], direction: down, debug: 3 };
-          if (this.isPositionValid(row - 1, col + 1) && this.cells[row][col].type === this.cells[row - 1][col + 1].type)
-            return { position: [row-1, col], direction: right, debug: 3 };
-          if (this.isPositionValid(row + 2, col - 1) && this.cells[row][col].type === this.cells[row + 2][col - 1].type)
-            return { position: [row+2, col], direction: left, debug: 3 };
-          if (this.isPositionValid(row + 3, col) && this.cells[row][col].type === this.cells[row + 3][col].type)
-            return { position: [row+2, col], direction: up, debug: 3 };
-          if (this.isPositionValid(row + 2, col + 1) && this.cells[row][col].type === this.cells[row + 2][col + 1].type)
-            return { position: [row+2, col], direction: right, debug: 3 };
+          if (this.isPositionValid(row - 1, col - 1) && this.cells[row][col].type === this.cells[row - 1][col - 1].type) {
+            hintPositions.push([row-1, col-1]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row - 2, col) && this.cells[row][col].type === this.cells[row - 2][col].type) {
+            hintPositions.push([row-2, col]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row - 1, col + 1) && this.cells[row][col].type === this.cells[row - 1][col + 1].type) {
+            hintPositions.push([row-1, col+1]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row + 2, col - 1) && this.cells[row][col].type === this.cells[row + 2][col - 1].type) {
+            hintPositions.push([row+2, col-1]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row + 3, col) && this.cells[row][col].type === this.cells[row + 3][col].type) {
+            hintPositions.push([row+3, col]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row + 2, col + 1) && this.cells[row][col].type === this.cells[row + 2][col + 1].type) {
+            hintPositions.push([row+2, col+1]);
+            return hintPositions;
+          }
         }
       }
     }
@@ -669,17 +699,22 @@ export default class GameModel {
     for (let row = 2; row <= GRID_HEIGHT - 1; row++) {
       for (let col = 1; col <= GRID_WIDTH; col++) {
         if (this.cells[row-1][col].type === this.cells[row+1][col].type) {
+          let hintPositions = [[row, col], [row, col+1]];
           // check 2 points
-          if (this.isPositionValid(row, col - 1) && this.cells[row - 1][col].type === this.cells[row][col - 1].type)
-            return { position: [row, col], direction: left, debug: 4 };
-          if (this.isPositionValid(row, col + 1) && this.cells[row - 1][col].type === this.cells[row][col + 1].type)
-            return { position: [row, col], direction: right, debug: 4 };
+          if (this.isPositionValid(row, col - 1) && this.cells[row - 1][col].type === this.cells[row][col - 1].type) {
+            hintPositions.push([row, col-1]);
+            return hintPositions;
+          }
+          if (this.isPositionValid(row, col + 1) && this.cells[row - 1][col].type === this.cells[row][col + 1].type) {
+            hintPositions.push([row, col+1]);
+            return hintPositions;
+          }
         }
       }
     }
 
     // no solution
-    return null;
+    return [];
   }
 
   isPositionValid(row, col) {
