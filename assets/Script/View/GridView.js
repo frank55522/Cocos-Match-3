@@ -236,10 +236,15 @@ cc.Class({
             return;
         }
 
-        console.log("Hint:");
-        for (const position of hint)
-            console.log(position);
-        // TODO show hint
+        console.log(`Hint:${hint}`);
+        for (const position of hint) {
+            /* 我覺得不行 */
+            // let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
+            // this.cellViews[position[0]][position[1]].runAction(blinkAction);
+
+            let cellScript = this.cellViews[position[0]][position[1]].getComponent("CellView");
+            cellScript.startBlinking();
+        }
     },
 
     //called every frame, uncomment this function to activate update callback

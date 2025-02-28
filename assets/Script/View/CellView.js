@@ -117,5 +117,25 @@ cc.Class({
         }
         bg.active = flag; 
         this.isSelect = flag;
+    },
+
+    // 讓 Cell 閃爍
+    startBlinking: function() {
+        if (this.blinkAction) return; // 如果已經在閃爍，就不重複執行
+        
+        let fadeOut = cc.fadeTo(0.5, 100);  // 透明度降低
+        let fadeIn = cc.fadeTo(0.5, 255);   // 透明度恢復
+        let blinkSequence = cc.sequence(fadeOut, fadeIn); // 透明度變化動畫
+        this.blinkAction = this.node.runAction(cc.repeatForever(blinkSequence)); // 讓動畫不斷執行
+        setTimeout(() => { this.stopBlinking(); }, 2000);
+    },
+
+    // 停止閃爍
+    stopBlinking: function() {
+        if (this.blinkAction) {
+            this.node.stopAction(this.blinkAction);
+            this.blinkAction = null;
+            this.node.opacity = 255; // 恢復原本透明度
+        }
     }
 });
