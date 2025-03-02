@@ -21,6 +21,10 @@ export default class GameModel {
     this.isProcessing = false; // 是否正在執行消除動畫
   }
 
+  setGameController(gameController) {
+    this.gameController = gameController;
+  }
+
   init(cellTypeNum) {
     this.cells = [];
     this.setCellTypeNum(cellTypeNum || this.cellTypeNum);
@@ -53,7 +57,6 @@ export default class GameModel {
         }
       }
     }
-
   }
 
   mock() {
@@ -274,8 +277,6 @@ export default class GameModel {
                 Toast(`Combo ${copyCycleCount}!`, { duration: 1, gravity: "CENTER" });
             }
 
-            this.isProcessing = false;
-
             if (this.goalLeft > 0) {
                 this.startThinkingTimer();
             } else {
@@ -286,6 +287,9 @@ export default class GameModel {
         checkPoint = nextCheckPoint;
         cycleCount++;
     }
+
+    this.isProcessing = false;
+    this.controller.logicCalculateEnd();
   }
 
   //生成新cell
@@ -609,112 +613,94 @@ export default class GameModel {
     // this.applyPenalty();
   }
 
-  // return value: [positions] => [p1, p2, p3] , no Sol: []
-  findValidMove() {
+  // return value: [hints], hint: [crushCells]
+  findAllHints() {
     //console.log(JSON.stringify(this.cells)); // look board in console
-    // find oo
-    for (let row = 1; row <= GRID_HEIGHT; row++) {
-      for (let col = 1; col <= GRID_WIDTH - 1; col++) {
-        if (this.cells[row][col].type === this.cells[row][col+1].type) {
-          let hintPositions = [[row, col], [row, col+1]];
-          // check 6 points
-          if (this.isPositionValid(row - 1, col - 1) && this.cells[row][col].type === this.cells[row - 1][col - 1].type) {
-            hintPositions.push([row-1, col-1]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row, col - 2) && this.cells[row][col].type === this.cells[row][col - 2].type) {
-            hintPositions.push([row, col-2]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row + 1, col - 1) && this.cells[row][col].type === this.cells[row + 1][col - 1].type) {
-            hintPositions.push([row+1, col-1]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row - 1, col + 2) && this.cells[row][col].type === this.cells[row - 1][col + 2].type) {
-            hintPositions.push([row-1, col+2]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row, col + 3) && this.cells[row][col].type === this.cells[row][col + 3].type) {
-            hintPositions.push([row, col+3]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row + 1, col + 2) && this.cells[row][col].type === this.cells[row + 1][col + 2].type) {
-            hintPositions.push([row+1, col+2]);
-            return hintPositions;
-          }
+    let result = [];
+    for (let type = CELL_TYPE.A; type < CELL_TYPE.A + this.cellTypeNum; type++) {
+      for (let row = 1; row <= GRID_HEIGHT; row++) {
+        for (let col = 1; col <= GRID_WIDTH; col++) {
+          let someHints = this.findHintsAtPoint(type, row, col);
+          for (const hint of someHints)
+            result.push(hint);
         }
       }
     }
-    // find o o
-    for (let row = 1; row <= GRID_HEIGHT; row++) {
-      for (let col = 2; col <= GRID_WIDTH - 1; col++) {
-        if (this.cells[row][col-1].type === this.cells[row][col+1].type) {
-          let hintPositions = [[row, col-1], [row, col+1]];
-          // check 2 points
-          if (this.isPositionValid(row - 1, col) && this.cells[row][col - 1].type === this.cells[row - 1][col].type) {
-            hintPositions.push([row-1, col]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row + 1, col) && this.cells[row][col - 1].type === this.cells[row + 1][col].type) {
-            hintPositions.push([row+1, col]);
-            return hintPositions;
-          }
-        }
-      }
+    return result;
+  }
+  findHintsAtPoint(type, row, col) { // for findAllHints()
+    let result = [];
+    if (this.cells[row][col].type === type)
+      return result;
+
+    let upCount = this.countCellsOnDirection(type, row, col, 1, 0);
+    let downCount = this.countCellsOnDirection(type, row, col, -1, 0);
+    let rightCount = this.countCellsOnDirection(type, row, col, 0, 1);
+    let leftCount = this.countCellsOnDirection(type, row, col, 0, -1);
+
+    let hint = this.getHintCrushCells(row, col, -1, downCount, rightCount, leftCount);
+    if (hint.length) {
+      hint.push([row + 1, col]);
+      result.push(hint);
     }
-    // find oo(vertical)
-    for (let row = 1; row <= GRID_HEIGHT - 1; row++) {
-      for (let col = 1; col <= GRID_WIDTH; col++) {
-        if (this.cells[row][col].type === this.cells[row+1][col].type) {
-          let hintPositions = [[row, col], [row+1, col]];
-          // check 6 points
-          if (this.isPositionValid(row - 1, col - 1) && this.cells[row][col].type === this.cells[row - 1][col - 1].type) {
-            hintPositions.push([row-1, col-1]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row - 2, col) && this.cells[row][col].type === this.cells[row - 2][col].type) {
-            hintPositions.push([row-2, col]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row - 1, col + 1) && this.cells[row][col].type === this.cells[row - 1][col + 1].type) {
-            hintPositions.push([row-1, col+1]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row + 2, col - 1) && this.cells[row][col].type === this.cells[row + 2][col - 1].type) {
-            hintPositions.push([row+2, col-1]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row + 3, col) && this.cells[row][col].type === this.cells[row + 3][col].type) {
-            hintPositions.push([row+3, col]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row + 2, col + 1) && this.cells[row][col].type === this.cells[row + 2][col + 1].type) {
-            hintPositions.push([row+2, col+1]);
-            return hintPositions;
-          }
-        }
-      }
+    hint = this.getHintCrushCells(row, col, upCount, -1, rightCount, leftCount);
+    if (hint.length) {
+      hint.push([row - 1, col]);
+      result.push(hint);
     }
-    // find o o(vertical)
-    for (let row = 2; row <= GRID_HEIGHT - 1; row++) {
-      for (let col = 1; col <= GRID_WIDTH; col++) {
-        if (this.cells[row-1][col].type === this.cells[row+1][col].type) {
-          let hintPositions = [[row, col], [row, col+1]];
-          // check 2 points
-          if (this.isPositionValid(row, col - 1) && this.cells[row - 1][col].type === this.cells[row][col - 1].type) {
-            hintPositions.push([row, col-1]);
-            return hintPositions;
-          }
-          if (this.isPositionValid(row, col + 1) && this.cells[row - 1][col].type === this.cells[row][col + 1].type) {
-            hintPositions.push([row, col+1]);
-            return hintPositions;
-          }
-        }
-      }
+    hint = this.getHintCrushCells(row, col, upCount, downCount, -1, leftCount);
+    if (hint.length) {
+      hint.push([row, col + 1]);
+      result.push(hint);
+    }
+    hint = this.getHintCrushCells(row, col, upCount, downCount, rightCount, -1);
+    if (hint.length) {
+      hint.push([row, col - 1]);
+      result.push(hint);
     }
 
-    // no solution
-    return [];
+    return result;
+  }
+  countCellsOnDirection(type, row, col, deltaRow, deltaCol) { // for findHintsAtPoint()
+    let result = 0;
+
+    for (let i = 1; this.isPositionValid(row + deltaRow * i, col + deltaCol * i) &&
+    this.cells[row + deltaRow * i][col + deltaCol * i].type === type; i++)
+      result++;
+
+    return result;
+  }
+  // If swap up: upcount = -1
+  getHintCrushCells(row, col, upCount, downCount, leftCount, rightCount) { // for findHintsAtPoint()
+    let result = [];
+
+    if (upCount >= 2) {
+      result.push([row + 1, col]);
+      result.push([row + 2, col]);
+    }
+    if (downCount >= 2) {
+      result.push([row - 1, col]);
+      result.push([row - 2, col]);
+    }
+    if (rightCount >= 2) {
+      result.push([row, col + 1]);
+      result.push([row, col + 2]);
+    }
+    if (leftCount >= 2) {
+      result.push([row, col - 1]);
+      result.push([row, col - 2]);
+    }
+
+    if (upCount === 1 && downCount > 0)
+      result.push([row + 1, col]);
+    if (downCount === 1 && upCount > 0)
+      result.push([row - 1, col]);
+    if (rightCount === 1 && leftCount > 0)
+      result.push([row, col + 1]);
+    if (leftCount === 1 && rightCount > 0)
+      result.push([row, col - 1]);
+
+    return result;
   }
 
   isPositionValid(row, col) {

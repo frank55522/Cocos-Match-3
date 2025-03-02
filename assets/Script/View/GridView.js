@@ -38,6 +38,7 @@ cc.Class({
         this.lastTouchPos = cc.Vec2(-1, -1);
         this.isCanMove = true;
         this.isInPlayAni = false; // 是否在播放中
+        this.hints = [];
     },
     setController: function(controller){
         this.controller = controller;
@@ -204,7 +205,7 @@ cc.Class({
             //console.log("call controller function checkEndGame");
             this.controller.checkEndGame();
             this.audioUtils.playContinuousMatch(step);
-            if (!this.controller.isEndGame()) this.controller.resetHintTimer();
+            if (!this.controller.isEndGame()) this.controller.animeEnd();
         }, this)));
     },
     // 正常击中格子后的操作
@@ -230,21 +231,29 @@ cc.Class({
         this.effectLayer.getComponent("EffectLayer").playEffects(effectsQueue);
     },
 
-    showHint: function(hint) {
-        if (hint == []) {
+    setHints: function(hints) {
+        this.hints = hints;
+    },
+
+    showHint: function() {
+        if (!this.hints.length) {
             console.log("No Solution");
             return;
         }
 
-        console.log(`Hint:${hint}`);
-        for (const position of hint) {
-            /* 我覺得不行 */
-            let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
-            this.cellViews[position[0]][position[1]].runAction(blinkAction);
-
-            let cellScript = this.cellViews[position[0]][position[1]].getComponent("CellView");
-            //cellScript.startBlinking();
+        /* Testing */
+        // console.log(this.hints);
+        for (const hint of this.hints) {
+            console.log(hint);
         }
+
+        // let randomIndex = Math.floor(Math.random() * this.hints.length);
+        // let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
+        // for (const positions of this.hints[randomIndex]) {
+        //     for (const [row, col] of positions) {
+        //         this.cellViews[row][col].runAction(blinkAction);
+        //     }
+        // }
     },
 
     //called every frame, uncomment this function to activate update callback
