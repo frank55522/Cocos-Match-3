@@ -638,25 +638,33 @@ export default class GameModel {
     let rightCount = this.countCellsOnDirection(type, row, col, 0, 1);
     let leftCount = this.countCellsOnDirection(type, row, col, 0, -1);
 
-    let hint = this.getHintCrushCells(row, col, -1, downCount, rightCount, leftCount);
-    if (hint.length) {
-      hint.push([row + 1, col]);
-      result.push(hint);
+    if (upCount) {
+      let hint = this.getHintCrushCells(row, col, -1, downCount, rightCount, leftCount);
+      if (hint.length) {
+        hint.push([row + 1, col]);
+        result.push(hint);
+      }
     }
-    hint = this.getHintCrushCells(row, col, upCount, -1, rightCount, leftCount);
-    if (hint.length) {
-      hint.push([row - 1, col]);
-      result.push(hint);
+    if (downCount) {
+      let hint = this.getHintCrushCells(row, col, upCount, -1, rightCount, leftCount);
+      if (hint.length) {
+        hint.push([row - 1, col]);
+        result.push(hint);
+      }
     }
-    hint = this.getHintCrushCells(row, col, upCount, downCount, -1, leftCount);
-    if (hint.length) {
-      hint.push([row, col + 1]);
-      result.push(hint);
+    if (rightCount) {
+      let hint = this.getHintCrushCells(row, col, upCount, downCount, -1, leftCount);
+      if (hint.length) {
+        hint.push([row, col + 1]);
+        result.push(hint);
+      }
     }
-    hint = this.getHintCrushCells(row, col, upCount, downCount, rightCount, -1);
-    if (hint.length) {
-      hint.push([row, col - 1]);
-      result.push(hint);
+    if (leftCount) {
+      let hint = this.getHintCrushCells(row, col, upCount, downCount, rightCount, -1);
+      if (hint.length) {
+        hint.push([row, col - 1]);
+        result.push(hint);
+      }
     }
 
     return result;
@@ -671,7 +679,7 @@ export default class GameModel {
     return result;
   }
   // If swap up: upcount = -1
-  getHintCrushCells(row, col, upCount, downCount, leftCount, rightCount) { // for findHintsAtPoint()
+  getHintCrushCells(row, col, upCount, downCount, rightCount, leftCount) { // for findHintsAtPoint()
     let result = [];
 
     if (upCount >= 2) {
