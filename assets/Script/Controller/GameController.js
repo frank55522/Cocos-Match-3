@@ -17,7 +17,10 @@ cc.Class({
         default: null, // 設置默認值
         type: cc.AudioSource
     },
-    
+    hintTimer: {
+      default: null,
+      type: cc.Node
+    }
   },
 
 
@@ -36,25 +39,15 @@ cc.Class({
     this.gridScript.setController(this);
     this.gridScript.initWithCellModels(this.gameModel.getCells());
     this.audioSource = cc.find('Canvas/GameScene')._components[1].audio;
+    this.hintTimerScript = this.hintTimer.getComponent("HintTimer");
+    this.hintTimerScript.setGameController(this);
   },
 
   start: function() {
     this.gameModel.startThinkingTimer();
     this.gridScript.setHints(this.getHints());
-    this.hintTimer = 2;
-    this.hintTimerEnabled = true;
-  },
-
-  update: function (dt) {
-    if (this.hintTimerEnabled) {
-      this.hintTimer -= dt;
-      if (this.hintTimer <= 0) {
-        // this.gridScript.showHint(null); // testing
-        this.gridScript.showHint();
-        // this.resetHintTimer();
-        this.hintTimerEnabled = false;
-      }
-    }
+    this.hintTimerScript.setInterval(2);
+    this.hintTimerScript.setWorkable(true);
   },
 
   callback: function () {
@@ -91,8 +84,8 @@ cc.Class({
     return this.gameModel.isEndGame();
   },
 
-  resetHintTimer: function() {
-    this.hintTimer = 2;
+  hintTimerTrigger: function() {
+    this.gridScript.showHint();
   },
 
   getHints: function() {
@@ -104,7 +97,6 @@ cc.Class({
   },
 
   logicCalculateEnd: function() {
-    this.resetHintTimer();
     this.gridScript.setHints(this.getHints());
   },
 
