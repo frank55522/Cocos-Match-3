@@ -187,6 +187,8 @@ export default class GameModel {
       this.lastPos = pos;
       return [[], []];
     }
+
+    this.gameController.consumeMove();
     let curClickCell = this.cells[pos.y][pos.x]; //当前点击的格子
     let lastClickCell = this.cells[lastPos.y][lastPos.x]; // 上一次点击的格式
     this.exchangeCell(lastPos, pos);
@@ -289,7 +291,7 @@ export default class GameModel {
     }
 
     this.isProcessing = false;
-    this.controller.logicCalculateEnd();
+    this.gameController.logicCalculateEnd();
   }
 
   //生成新cell

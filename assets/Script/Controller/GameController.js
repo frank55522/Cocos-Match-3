@@ -93,7 +93,7 @@ cc.Class({
   },
 
   consumeMove() {
-    this.hintTimerEnabled = false;
+    this.hintTimerScript.setWorkable(false);
   },
 
   logicCalculateEnd: function() {
@@ -101,6 +101,6 @@ cc.Class({
   },
 
   animeEnd: function() {
-    
+    this.hintTimerScript.setWorkable(true);
   }
 });
