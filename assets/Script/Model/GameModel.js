@@ -641,31 +641,35 @@ export default class GameModel {
     let leftCount = this.countCellsOnDirection(type, row, col, 0, -1);
 
     if (upCount) {
-      let hint = this.getHintCrushCells(row, col, -1, downCount, rightCount, leftCount);
-      if (hint.length) {
-        hint.push([row + 1, col]);
-        result.push(hint);
+      let crushPositions = this.getHintCrushCells(row, col, -1, downCount, rightCount, leftCount);
+      if (crushPositions.length) {
+        crushPositions.push([row + 1, col]);
+        let swapPositions = [[row, col], [row + 1, col]];
+        result.push({crushPositions: crushPositions, swapPositions: swapPositions});
       }
     }
     if (downCount) {
-      let hint = this.getHintCrushCells(row, col, upCount, -1, rightCount, leftCount);
-      if (hint.length) {
-        hint.push([row - 1, col]);
-        result.push(hint);
+      let crushPositions = this.getHintCrushCells(row, col, upCount, -1, rightCount, leftCount);
+      if (crushPositions.length) {
+        crushPositions.push([row - 1, col]);
+        let swapPositions = [[row, col], [row - 1, col]];
+        result.push({crushPositions: crushPositions, swapPositions: swapPositions});
       }
     }
     if (rightCount) {
-      let hint = this.getHintCrushCells(row, col, upCount, downCount, -1, leftCount);
-      if (hint.length) {
-        hint.push([row, col + 1]);
-        result.push(hint);
+      let crushPositions = this.getHintCrushCells(row, col, upCount, downCount, -1, leftCount);
+      if (crushPositions.length) {
+        crushPositions.push([row, col + 1]);
+        let swapPositions = [[row, col], [row, col + 1]];
+        result.push({crushPositions: crushPositions, swapPositions: swapPositions});
       }
     }
     if (leftCount) {
-      let hint = this.getHintCrushCells(row, col, upCount, downCount, rightCount, -1);
-      if (hint.length) {
-        hint.push([row, col - 1]);
-        result.push(hint);
+      let crushPositions = this.getHintCrushCells(row, col, upCount, downCount, rightCount, -1);
+      if (crushPositions.length) {
+        crushPositions.push([row, col - 1]);
+        let swapPositions = [[row, col], [row, col - 1]];
+        result.push({crushPositions: crushPositions, swapPositions: swapPositions});
       }
     }
 

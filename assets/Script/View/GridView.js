@@ -248,11 +248,12 @@ cc.Class({
         // }
 
         let randomIndex = Math.floor(Math.random() * this.hints.length);
-        for (const [row, col] of this.hints[randomIndex]) {
+        for (const [row, col] of this.hints[randomIndex].crushPositions) {
             // console.log([row, col]);
             let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
             this.cellViews[row][col].runAction(blinkAction);
         }
+        console.log(`hint swap: ${this.hints[randomIndex].swapPositions}`);
     },
 
     //called every frame, uncomment this function to activate update callback
