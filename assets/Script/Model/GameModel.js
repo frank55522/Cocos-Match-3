@@ -19,6 +19,7 @@ export default class GameModel {
     this.currentThinkingTime = this.thinkingTimeLimit;
     this.thinkingTimer = null;
     this.isProcessing = false; // 是否正在執行消除動畫
+    this.currentHint = null; // 當前提示
   }
 
   setGameController(gameController) {
@@ -607,12 +608,26 @@ export default class GameModel {
   }
 
   handleThinkingTimeout() {
-    if (this.goalLeft === 0) {
+    if (this.goalLeft === 0 || this.isGameOver) {
+        clearInterval(this.thinkingTimer);
         return;
     }
 
+    console.log("時間到，自動消除當下提示的組合...");
+
+    const currentHint = this.currentHint; 
+    if (currentHint && currentHint.swapPositions.length >= 2) {
+        console.log("自動消除提示的組合:", currentHint.swapPositions);
+        
+        const pos1 = cc.v2(currentHint.swapPositions[0][1], currentHint.swapPositions[0][0]);
+        const pos2 = cc.v2(currentHint.swapPositions[1][1], currentHint.swapPositions[1][0]);
+        
+        this.gameController.autoSelectCells(pos1, pos2);
+    } else {
+        console.log("當前提示沒有有效的消除組合");
+    }
+
     clearInterval(this.thinkingTimer);
-    // this.applyPenalty();
   }
 
   // return value: [hints], hint: [crushCells]

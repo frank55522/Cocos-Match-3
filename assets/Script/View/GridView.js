@@ -248,6 +248,7 @@ cc.Class({
         // }
 
         let randomIndex = Math.floor(Math.random() * this.hints.length);
+        this.controller.gameModel.currentHint = this.hints[randomIndex];
         for (const [row, col] of this.hints[randomIndex].crushPositions) {
             // console.log([row, col]);
             let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次

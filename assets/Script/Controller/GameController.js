@@ -102,5 +102,11 @@ cc.Class({
 
   animeEnd: function() {
     this.hintTimerScript.setWorkable(true);
+  },
+
+  autoSelectCells: function (pos1, pos2) {
+    console.log(`自動執行消除操作: (${pos1.x},${pos1.y}) <-> (${pos2.x},${pos2.y})`);
+    this.gridScript.selectCell(pos1);
+    this.gridScript.selectCell(pos2);
   }
 });
