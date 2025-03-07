@@ -278,6 +278,7 @@ export default class GameModel {
 
             if (copyCycleCount > 1 && hasNextCrush) {
                 Toast(`Combo ${copyCycleCount}!`, { duration: 1, gravity: "CENTER" });
+                this.earnCoinsByStep(copyCycleCount);
             }
 
             if (this.goalLeft > 0) {
@@ -519,18 +520,27 @@ export default class GameModel {
   earnCoinsByCrush(crushQuantity) {
     let totalEarn = 0;
 
-    if (crushQuantity > 12)
-        totalEarn += 5;
-    else if (crushQuantity > 9)
-        totalEarn += 3;
-    else if (crushQuantity > 3)
-        totalEarn += 1;
+    if (crushQuantity >= 21)
+      totalEarn += 150;
+    else if (crushQuantity >= 18)
+      totalEarn += 120;
+    else if (crushQuantity >= 15)
+      totalEarn += 85;
+    else if (crushQuantity >= 12)
+      totalEarn += 45;
+    else if (crushQuantity >= 9)
+      totalEarn += 25;
+    else if (crushQuantity >= 6)
+      totalEarn += 15;
+    else if (crushQuantity >= 3)
+      totalEarn += 10;
 
     this.earnCoin(totalEarn);
   }
 
   earnCoinsByStep(totalSteps) {
-    let stepBonus = Math.floor(totalSteps / 3);
+    let stepBonus = 3 * Math.pow(totalSteps, 2);
+    console.log(`Combo ${totalSteps} 結算獲得 ${stepBonus} 金幣！`);
     this.earnCoin(stepBonus);
   }
 
