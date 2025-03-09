@@ -235,7 +235,15 @@ export default class GameModel {
             let pos2 = checkPoint[1];
             let model1 = this.cells[pos1.y][pos1.x];
             let model2 = this.cells[pos2.y][pos2.x];
-            if (model1.status == CELL_STATUS.BIRD || model2.status == CELL_STATUS.BIRD) {
+            let lineQuantity = 0, wrapQuantity = 0, birdQuantity = 0;
+            lineQuantity += (model1.status == CELL_STATUS.LINE || model1.status == CELL_STATUS.COLUMN);
+            lineQuantity += (model2.status == CELL_STATUS.LINE || model2.status == CELL_STATUS.COLUMN);
+            wrapQuantity += (model1.status == CELL_STATUS.WRAP);
+            wrapQuantity += (model2.status == CELL_STATUS.WRAP);
+            birdQuantity += (model1.status == CELL_STATUS.BIRD);
+            birdQuantity += (model2.status == CELL_STATUS.BIRD);
+
+            if (birdQuantity === 1) {
                 if (model1.status == CELL_STATUS.BIRD) {
                     model1.type = model2.type;
                     bombModels.push(model1);
@@ -243,6 +251,24 @@ export default class GameModel {
                     model2.type = model1.type;
                     bombModels.push(model2);
                 }
+            }
+            else if (lineQuantity === 2) {
+                // 直線 * 2
+            }
+            else if (lineQuantity && wrapQuantity) {
+                // 直線 + 爆破
+            }
+            else if (lineQuantity && birdQuantity) {
+                // 直線 + 鳥
+            }
+            else if (wrapQuantity === 2) {
+                // 爆破 * 2
+            }
+            else if (wrapQuantity && birdQuantity) {
+                // 爆破 + 鳥
+            }
+            else if (birdQuantity === 2) {
+                // 鳥 * 2
             }
         }
 
