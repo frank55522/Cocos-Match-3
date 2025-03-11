@@ -34,7 +34,7 @@ cc.Class({
     audioButton.on('click', this.callback, this)
     this.gameModel = new GameModel();
     this.gameModel.setGameController(this);
-    this.gameModel.init(4);
+    this.gameModel.init(5);
     this.gridScript = this.grid.getComponent("GridView");
     this.gridScript.setController(this);
     this.gridScript.initWithCellModels(this.gameModel.getCells());

@@ -10,9 +10,9 @@ export default class GameModel {
     this.lastPos = cc.v2(-1, -1);
     this.cellTypeNum = 5;
     this.cellCreateType = []; // 升成种类只在这个数组里面查找
-    this.movesLeft = 10;
+    this.movesLeft = 99999;
     this.isGameOver = false;
-    this.goalLeft = 87;
+    this.goalLeft = 99999;
     this.totalCrushed = 0; // 記錄一輪要消除的數量
     this.coin = 0;
     this.thinkingTimeLimit = 10; // 玩家有 10 秒時間思考
@@ -243,7 +243,7 @@ export default class GameModel {
             birdQuantity += (model1.status == CELL_STATUS.BIRD);
             birdQuantity += (model2.status == CELL_STATUS.BIRD);
 
-            if (birdQuantity === 1) {
+            if (!lineQuantity && !wrapQuantity && birdQuantity === 1) {
                 if (model1.status == CELL_STATUS.BIRD) {
                     model1.type = model2.type;
                     bombModels.push(model1);
@@ -258,28 +258,48 @@ export default class GameModel {
             else if (lineQuantity && wrapQuantity) {
                 // 直線 + 爆破
             }
-            else if (lineQuantity && birdQuantity) {
-                // 直線 + 鳥
+            else if (lineQuantity && birdQuantity) {// 直線 + 鳥
+                let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
+                for (let row = 1; row <= GRID_HEIGHT; row++) {
+                    for (let col = 1; col <= GRID_WIDTH; col++) {
+                        if (!this.cells[row][col]) continue;
+                        
+                        if (this.cells[row][col].type === changeType) {
+                            this.cells[row][col].status = (Math.random() < 0.5) ? CELL_STATUS.LINE : CELL_STATUS.COLUMN;
+                            bombModels.push(this.cells[row][col]);
+                        }
+                    }
+                }
             }
             else if (wrapQuantity === 2) {
                 // 爆破 * 2
             }
-            else if (wrapQuantity && birdQuantity) {
-                // 爆破 + 鳥
+            else if (wrapQuantity && birdQuantity) {// 爆破 + 鳥
+                let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
+                for (let row = 1; row <= GRID_HEIGHT; row++) {
+                    for (let col = 1; col <= GRID_WIDTH; col++) {
+                        if (!this.cells[row][col]) continue;
+                        
+                        if (this.cells[row][col].type === changeType) {
+                            this.cells[row][col].status = CELL_STATUS.WRAP;
+                            bombModels.push(this.cells[row][col]);
+                        }
+                    }
+                }
             }
             else if (birdQuantity === 2) {
                 // 鳥 * 2
             }
         }
 
-        for (var i in checkPoint) {
-            var pos = checkPoint[i];
+        for (let i in checkPoint) {
+            let pos = checkPoint[i];
             if (!this.cells[pos.y][pos.x]) continue;
-            var [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
+            let [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
             if (result.length < 3) continue;
 
-            for (var j in result) {
-                var model = this.cells[result[j].y][result[j].x];
+            for (let j in result) {
+                let model = this.cells[result[j].y][result[j].x];
                 this.crushCell(result[j].x, result[j].y, false, cycleCount);
                 if (model.status != CELL_STATUS.COMMON) {
                     bombModels.push(model);
