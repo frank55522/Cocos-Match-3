@@ -58,6 +58,14 @@ export default class GameModel {
         }
       }
     }
+
+    /* Testing */
+    this.cells[1][1].type = CELL_TYPE.BIRD;
+    this.cells[1][1].status = CELL_STATUS.BIRD;
+    this.cells[1][2].type = CELL_TYPE.BIRD;
+    this.cells[1][2].status = CELL_STATUS.BIRD;
+    this.cells[2][1].status = CELL_STATUS.COLUMN;
+    this.cells[2][2].status = CELL_STATUS.WRAP;
   }
 
   mock() {
@@ -229,6 +237,7 @@ export default class GameModel {
     while (checkPoint.length > 0) {
         this.totalCrushed = 0;
         let bombModels = [];
+        let specialCrush = false;
 
         if (cycleCount == 1 && checkPoint.length == 2) {
             let pos1 = checkPoint[0];
@@ -243,6 +252,8 @@ export default class GameModel {
             birdQuantity += (model1.status == CELL_STATUS.BIRD);
             birdQuantity += (model2.status == CELL_STATUS.BIRD);
 
+            specialCrush = (lineQuantity + wrapQuantity + birdQuantity === 2 || birdQuantity);
+
             if (!lineQuantity && !wrapQuantity && birdQuantity === 1) {
                 if (model1.status == CELL_STATUS.BIRD) {
                     model1.type = model2.type;
@@ -251,64 +262,48 @@ export default class GameModel {
                     model2.type = model1.type;
                     bombModels.push(model2);
                 }
+
+                this.processBomb(bombModels, cycleCount);
             }
-            else if (lineQuantity === 2) {
-                // 直線 * 2
+            else if (lineQuantity === 2) {// 直線 * 2
+
             }
-            else if (lineQuantity && wrapQuantity) {
-                // 直線 + 爆破
+            else if (lineQuantity && wrapQuantity) {// 直線 + 爆破
+
             }
             else if (lineQuantity && birdQuantity) {// 直線 + 鳥
-                let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
-                for (let row = 1; row <= GRID_HEIGHT; row++) {
-                    for (let col = 1; col <= GRID_WIDTH; col++) {
-                        if (!this.cells[row][col]) continue;
-                        
-                        if (this.cells[row][col].type === changeType) {
-                            this.cells[row][col].status = (Math.random() < 0.5) ? CELL_STATUS.LINE : CELL_STATUS.COLUMN;
-                            bombModels.push(this.cells[row][col]);
-                        }
-                    }
-                }
+                this.straightPlusBird(model1, model2);
             }
-            else if (wrapQuantity === 2) {
-                // 爆破 * 2
+            else if (wrapQuantity === 2) {// 爆破 * 2
+
             }
             else if (wrapQuantity && birdQuantity) {// 爆破 + 鳥
-                let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
-                for (let row = 1; row <= GRID_HEIGHT; row++) {
-                    for (let col = 1; col <= GRID_WIDTH; col++) {
-                        if (!this.cells[row][col]) continue;
-                        
-                        if (this.cells[row][col].type === changeType) {
-                            this.cells[row][col].status = CELL_STATUS.WRAP;
-                            bombModels.push(this.cells[row][col]);
-                        }
+                this.wrapPlusBird(model1, model2);
+            }
+            else if (birdQuantity === 2) {// 鳥 * 2
+                this.birdPlusBird();
+            }
+        }
+
+        if (!specialCrush) {
+            for (let i in checkPoint) {
+                let pos = checkPoint[i];
+                if (!this.cells[pos.y][pos.x]) continue;
+                let [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
+                if (result.length < 3) continue;
+
+                for (let j in result) {
+                    let model = this.cells[result[j].y][result[j].x];
+                    this.crushCell(result[j].x, result[j].y, false, cycleCount);
+                    if (model.status != CELL_STATUS.COMMON) {
+                        bombModels.push(model);
                     }
                 }
+                this.createNewCell(crushPoint, newCellStatus, newCellType);
             }
-            else if (birdQuantity === 2) {
-                // 鳥 * 2
-            }
+
+            this.processBomb(bombModels, cycleCount);
         }
-
-        for (let i in checkPoint) {
-            let pos = checkPoint[i];
-            if (!this.cells[pos.y][pos.x]) continue;
-            let [result, newCellStatus, newCellType, crushPoint] = this.checkPoint(pos.x, pos.y, true);
-            if (result.length < 3) continue;
-
-            for (let j in result) {
-                let model = this.cells[result[j].y][result[j].x];
-                this.crushCell(result[j].x, result[j].y, false, cycleCount);
-                if (model.status != CELL_STATUS.COMMON) {
-                    bombModels.push(model);
-                }
-            }
-            this.createNewCell(crushPoint, newCellStatus, newCellType);
-        }
-
-        this.processBomb(bombModels, cycleCount);
 
         let copyTotalCrushed = this.totalCrushed;
         let copyCycleCount = cycleCount;
@@ -513,6 +508,56 @@ export default class GameModel {
       bombModels = newBombModel;
     }
   }
+
+  straightPlusStraight(pos) {
+
+  }
+  straightPlusWrap() {
+
+  }
+  straightPlusBird(model1, model2) {
+    let bombModels = [];
+    let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
+    for (let row = 1; row <= GRID_HEIGHT; row++) {
+      for (let col = 1; col <= GRID_WIDTH; col++) {
+        if (!this.cells[row][col]) continue;
+                        
+        if (this.cells[row][col].type === changeType) {
+          this.cells[row][col].status = (Math.random() < 0.5) ? CELL_STATUS.LINE : CELL_STATUS.COLUMN;
+          bombModels.push(this.cells[row][col]);
+        }
+      }
+    }
+    this.processBomb(bombModels, 1);
+  }
+  wrapPlusWrap() {
+
+  }
+  wrapPlusBird(model1, model2) {
+    let bombModels = [];
+    let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
+    for (let row = 1; row <= GRID_HEIGHT; row++) {
+      for (let col = 1; col <= GRID_WIDTH; col++) {
+        if (!this.cells[row][col]) continue;
+                        
+        if (this.cells[row][col].type === changeType) {
+          this.cells[row][col].status = CELL_STATUS.WRAP;
+          bombModels.push(this.cells[row][col]);
+        }
+      }
+    }
+    this.processBomb(bombModels, 1);
+  }
+  birdPlusBird() {
+    for (let row = 1; row <= GRID_HEIGHT; row++) {
+      for (let col = 1; col <= GRID_WIDTH; col++) {
+        this.crushCell(col, row, true, 1);
+      }
+    }
+    this.curTime += ANITIME.BOMB_BIRD_DELAY;
+  }
+
+
   /**
    * 
    * @param {开始播放的时间} playTime 
