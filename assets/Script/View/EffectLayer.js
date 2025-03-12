@@ -60,6 +60,11 @@ cc.Class({
                     animation  = instantEffect.getComponent(cc.Animation);
                     animation.play("effect_col");
                 }
+                else if(cmd.action == "wrapBomb"){
+                    instantEffect = cc.instantiate(this.crushEffect);
+                    animation = instantEffect.getComponent(cc.Animation);
+                    animation.play("effect");
+                }
 
                 instantEffect.x = CELL_WIDTH * (cmd.pos.x - 0.5);
                 instantEffect.y = CELL_WIDTH * (cmd.pos.y - 0.5);

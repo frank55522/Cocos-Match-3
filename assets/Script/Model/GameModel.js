@@ -266,16 +266,16 @@ export default class GameModel {
                 this.processBomb(bombModels, cycleCount);
             }
             else if (lineQuantity === 2) {// 直線 * 2
-
+                this.straightPlusStraight(model1, model2);
             }
             else if (lineQuantity && wrapQuantity) {// 直線 + 爆破
-
+                this.straightPlusWrap(model1, model2);
             }
             else if (lineQuantity && birdQuantity) {// 直線 + 鳥
                 this.straightPlusBird(model1, model2);
             }
             else if (wrapQuantity === 2) {// 爆破 * 2
-
+                this.wrapPlusWrap(model1, model2);
             }
             else if (wrapQuantity && birdQuantity) {// 爆破 + 鳥
                 this.wrapPlusBird(model1, model2);
@@ -509,12 +509,76 @@ export default class GameModel {
     }
   }
 
-  straightPlusStraight(pos) {
-
+  straightPlusStraight(model1, model2) {
+    let bombPos = {x: model1.x, y: model1.y};
+    
+    for (let col = 1; col <= GRID_WIDTH; col++) {
+        if (this.cells[bombPos.y][col]) {
+            if (this.cells[bombPos.y][col].status != CELL_STATUS.COMMON) {
+                this.crushCell(col, bombPos.y, false, 1);
+            } else {
+                this.crushCell(col, bombPos.y, false, 1);
+            }
+        }
+    }
+    
+    for (let row = 1; row <= GRID_HEIGHT; row++) {
+        if (this.cells[row][bombPos.x]) {
+            if (this.cells[row][bombPos.x].status != CELL_STATUS.COMMON && 
+                !(row === bombPos.y)) {
+                this.crushCell(bombPos.x, row, false, 1);
+            } else if (!(row === bombPos.y)) {
+                this.crushCell(bombPos.x, row, false, 1);
+            }
+        }
+    }
+    
+    this.addRowBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
+    this.addColBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
   }
-  straightPlusWrap() {
 
+  straightPlusWrap(model1, model2) {
+    let straightModel = model1.status === CELL_STATUS.LINE || model1.status === CELL_STATUS.COLUMN ? model1 : model2;
+    let wrapModel = model1.status === CELL_STATUS.WRAP ? model1 : model2;
+    let bombPos = {x: model1.x, y: model1.y};
+    
+    for (let col = 1; col <= GRID_WIDTH; col++) {
+        for (let offset = -1; offset <= 1; offset++) {
+            let row = bombPos.y + offset;
+            if (row >= 1 && row <= GRID_HEIGHT && this.cells[row][col]) {
+                if (this.cells[row][col].status != CELL_STATUS.COMMON) {
+                    this.crushCell(col, row, false, 1);
+                } else {
+                    this.crushCell(col, row, false, 1);
+                }
+            }
+        }
+    }
+    
+    for (let row = 1; row <= GRID_HEIGHT; row++) {
+        for (let offset = -1; offset <= 1; offset++) {
+            let col = bombPos.x + offset;
+            if (col >= 1 && col <= GRID_WIDTH && this.cells[row][col]) {
+                let inHorizontalRange = Math.abs(row - bombPos.y) <= 1;
+                if (!inHorizontalRange || col !== bombPos.x || row !== bombPos.y) {
+                    if (this.cells[row][col].status != CELL_STATUS.COMMON) {
+                        this.crushCell(col, row, false, 1);
+                    } else {
+                        this.crushCell(col, row, false, 1);
+                    }
+                }
+            }
+        }
+    }
+    
+    this.addRowBomb(this.curTime, cc.v2(bombPos.x, bombPos.y+1));
+    this.addRowBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
+    this.addRowBomb(this.curTime, cc.v2(bombPos.x, bombPos.y-1));
+    this.addColBomb(this.curTime, cc.v2(bombPos.x+1, bombPos.y));
+    this.addColBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
+    this.addColBomb(this.curTime, cc.v2(bombPos.x-1, bombPos.y));
   }
+
   straightPlusBird(model1, model2) {
     let bombModels = [];
     let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
@@ -530,9 +594,33 @@ export default class GameModel {
     }
     this.processBomb(bombModels, 1);
   }
-  wrapPlusWrap() {
 
+  wrapPlusWrap(model1, model2) {
+    let bombPos = {x: model1.x, y: model1.y};
+    for (let row = 1; row <= GRID_HEIGHT; row++) {
+        for (let col = 1; col <= GRID_WIDTH; col++) {
+            let chebyshevDist = Math.max(
+                Math.abs(col - bombPos.x),
+                Math.abs(row - bombPos.y)
+            );
+            
+            if (chebyshevDist <= 2 && this.cells[row][col]) {
+                if (this.cells[row][col].status != CELL_STATUS.COMMON) {
+                    this.crushCell(col, row, false, 1);
+                } else {
+                    this.crushCell(col, row, false, 1);
+                }
+            }
+        }
+    }
+    
+    this.effectsQueue.push({
+        playTime: this.curTime,
+        pos: cc.v2(bombPos.x, bombPos.y),
+        action: "wrapBomb"
+    });
   }
+
   wrapPlusBird(model1, model2) {
     let bombModels = [];
     let changeType = (model1.status === CELL_STATUS.BIRD) ? model2.type : model1.type;
@@ -548,6 +636,7 @@ export default class GameModel {
     }
     this.processBomb(bombModels, 1);
   }
+
   birdPlusBird() {
     for (let row = 1; row <= GRID_HEIGHT; row++) {
       for (let col = 1; col <= GRID_WIDTH; col++) {
@@ -590,8 +679,13 @@ export default class GameModel {
   }
 
   addWrapBomb(playTime, pos) {
-    // TODO
+    this.effectsQueue.push({
+        playTime,
+        pos,
+        action: "wrapBomb"  // 確保使用 wrapBomb 而不是其他動作名稱
+    });
   }
+
   // cell消除逻辑
   crushCell(x, y, needShake, step) {
     let model = this.cells[y][x];
