@@ -613,12 +613,6 @@ export default class GameModel {
             }
         }
     }
-    
-    this.effectsQueue.push({
-        playTime: this.curTime,
-        pos: cc.v2(bombPos.x, bombPos.y),
-        action: "wrapBomb"
-    });
   }
 
   wrapPlusBird(model1, model2) {
