@@ -2,6 +2,8 @@ import CellModel from "./CellModel";
 import { mergePointArray, exclusivePoint } from "../Utils/ModelUtils"
 import { CELL_TYPE, CELL_BASENUM, CELL_STATUS, GRID_WIDTH, GRID_HEIGHT, ANITIME } from "./ConstValue";
 import Toast from '../Utils/Toast';
+const LeaderboardManager = require("../Manager/LeaderboardManager");
+const GlobalData = require("../Utils/GlobalData");
 
 export default class GameModel {
   constructor() {
@@ -10,7 +12,7 @@ export default class GameModel {
     this.lastPos = cc.v2(-1, -1);
     this.cellTypeNum = 5;
     this.cellCreateType = []; // 升成种类只在这个数组里面查找
-    this.movesLeft = 99999;
+    this.movesLeft = 1;
     this.isGameOver = false;
     this.goalLeft = 99999;
     this.totalCrushed = 0; // 記錄一輪要消除的數量
@@ -27,6 +29,10 @@ export default class GameModel {
   }
 
   init(cellTypeNum) {
+    // 測試 localStorage 訪問
+    const playerId = cc.sys.localStorage.getItem('playerId');
+    console.log("遊戲初始化時讀取到的玩家 ID:", playerId);
+
     this.cells = [];
     this.setCellTypeNum(cellTypeNum || this.cellTypeNum);
     for (var i = 1; i <= GRID_WIDTH; i++) {
@@ -732,26 +738,58 @@ export default class GameModel {
         this.endGame();
     }
   }
+
   endGame() {
     this.isGameOver = true;
     console.log("遊戲結束！步數已用完。");
+    
+    // 停止思考時間計時器
+    if (this.thinkingTimer) {
+      clearInterval(this.thinkingTimer);
+      this.thinkingTimer = null; // 設為 null 確保不會再被使用
+    }
+    
+    // 確保所有金幣計算完成
+    setTimeout(() => {
+      this.saveScoreToLeaderboard();
+      this.showLeaderboard();
+    }, 500); // 給予足夠時間確保金幣計算完成
   }
+
   isEndGame() { return this.isGameOver; }
 
   levelComplete() {
     this.isGameOver = true;
-
+  
+    // 停止思考時間計時器
+    if (this.thinkingTimer) {
+      clearInterval(this.thinkingTimer);
+      this.thinkingTimer = null;
+    }
+  
     // 引爆場上剩餘特殊動物
     // To do
-
+  
     console.log(`已通關，剩餘步數(${this.movesLeft})轉成金幣(${this.movesLeft * 15})`);
-    this.leftMovesToCoins();
+  
+    // 先轉換剩餘步數為金幣
+    this.leftMovesToCoins(() => {
+      // 在金幣轉換完成後保存分數並顯示排行榜
+      this.saveScoreToLeaderboard();
+      this.showLeaderboard();
+    });
   }
-  leftMovesToCoins() {
+
+  leftMovesToCoins(callback) {
     if (this.movesLeft > 0) {
-      this.movesLeft--;
-      this.earnCoin(15);
-      setTimeout(() => { this.leftMovesToCoins(); }, 50);
+        this.movesLeft--;
+        this.earnCoin(15);
+        setTimeout(() => { 
+            this.leftMovesToCoins(callback); 
+        }, 50);
+    } else if (callback) {
+        // 所有步數都轉換完成後，執行回調
+        callback();
     }
   }
 
@@ -923,6 +961,189 @@ export default class GameModel {
 
   isPositionValid(row, col) {
     return row > 0 && col > 0 && row <= GRID_HEIGHT && col <= GRID_WIDTH;
+  }
+
+  saveScoreToLeaderboard() {
+    // 從 GlobalData 獲取玩家 ID
+    let playerId = GlobalData.getPlayerId();
+    
+    // 如果沒有玩家 ID，使用訪客 ID
+    if (!playerId || playerId.trim() === "") {
+        playerId = "Guest_" + Math.floor(Math.random() * 10000);
+        // 更新到 GlobalData
+        GlobalData.setPlayerId(playerId);
+    }
+    
+    try {
+        // 初始化排行榜管理器
+        const LeaderboardManagerClass = require("../Manager/LeaderboardManager");
+        let leaderboardNode = new cc.Node('LeaderboardManager');
+        let leaderboardManager = leaderboardNode.addComponent(LeaderboardManagerClass);
+        
+        leaderboardManager.initialize();
+        
+        // 添加分數到排行榜
+        let rank = leaderboardManager.addScore(playerId, this.coin);
+        
+        // 儲存當前玩家 ID 到全局位置，確保 showLeaderboard 能訪問到
+        cc.game.currentPlayerId = playerId;
+        
+        // 儲存當前排名供顯示界面使用
+        this.currentRank = rank;
+    } catch (e) {
+        console.error("添加分數到排行榜時出錯:", e);
+    }
+  }
+
+  showLeaderboard() {
+    let canvas = cc.director.getScene().getComponentInChildren(cc.Canvas);
+    
+    // 先新增一個半透明黑色遮罩背景覆蓋整個畫面
+    let maskNode = new cc.Node("Mask");
+    let maskSprite = maskNode.addComponent(cc.Sprite);
+    maskSprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
+    maskNode.width = canvas.node.width;
+    maskNode.height = canvas.node.height;
+    maskNode.color = cc.color(0, 0, 0);
+    maskNode.opacity = 150; // 半透明
+    maskNode.parent = canvas.node;
+    
+    // 創建排行榜背景面板 (白色背景)
+    let leaderboardNode = new cc.Node("LeaderboardPanel");
+    leaderboardNode.width = 600;
+    leaderboardNode.height = 700;
+    
+    // 使用繪圖元件來畫一個白色矩形
+    let graphics = leaderboardNode.addComponent(cc.Graphics);
+    graphics.fillColor = cc.color(255, 255, 255, 255); // 純白色
+    graphics.rect(-300, -350, 600, 700); // 在節點中央繪製一個矩形 (x, y, 寬, 高)
+    graphics.fill();
+    
+    leaderboardNode.parent = canvas.node;
+    
+    // 添加排行榜標題 (使用黑色字體)
+    let titleNode = new cc.Node("Title");
+    let titleLabel = titleNode.addComponent(cc.Label);
+    titleLabel.string = "排行榜";
+    titleLabel.fontSize = 40;
+    titleLabel.lineHeight = 40;
+    titleLabel.node.color = cc.color(0, 0, 0); // 黑色
+    titleNode.position = cc.v2(0, 300);
+    titleNode.parent = leaderboardNode;
+    
+    // 獲取排行榜數據
+    try {
+      const LeaderboardManagerClass = require("../Manager/LeaderboardManager");
+      // 建立一個新的節點來掛載元件
+      let leaderboardMgrNode = new cc.Node('LeaderboardManager');
+      // 添加 LeaderboardManager 元件
+      let leaderboardManager = leaderboardMgrNode.addComponent(LeaderboardManagerClass);
+      
+      leaderboardManager.initialize();
+      let leaderboard = leaderboardManager.getLeaderboard();
+      
+      // 動態創建排行榜項目
+      for (let i = 0; i < leaderboard.length; i++) {
+        let entry = leaderboard[i];
+        
+        let entryNode = new cc.Node(`Entry_${i}`);
+        entryNode.position = cc.v2(0, 230 - i * 50);
+        entryNode.parent = leaderboardNode;
+        
+        // 排名
+        let rankNode = new cc.Node("Rank");
+        let rankLabel = rankNode.addComponent(cc.Label);
+        rankLabel.string = (i + 1).toString();
+        rankLabel.fontSize = 30;
+        rankLabel.node.color = cc.color(0, 0, 0); // 黑色
+        rankNode.position = cc.v2(-200, 0);
+        rankNode.parent = entryNode;
+        
+        // 玩家ID
+        let idNode = new cc.Node("ID");
+        let idLabel = idNode.addComponent(cc.Label);
+        idLabel.string = entry.playerId;
+        idLabel.fontSize = 30;
+        idLabel.node.color = cc.color(0, 0, 0); // 黑色
+        idNode.position = cc.v2(0, 0);
+        idNode.parent = entryNode;
+        
+        // 分數
+        let scoreNode = new cc.Node("Score");
+        let scoreLabel = scoreNode.addComponent(cc.Label);
+        scoreLabel.string = entry.score.toString();
+        scoreLabel.fontSize = 30;
+        scoreLabel.node.color = cc.color(0, 0, 0); // 黑色
+        scoreNode.position = cc.v2(200, 0);
+        scoreNode.parent = entryNode;
+        
+        // 高亮顯示當前玩家
+        let currentPlayerId = GlobalData.getPlayerId();
+        
+        if (entry.playerId === currentPlayerId) {
+          let highlight = new cc.Node("Highlight");
+          let hlGraphics = highlight.addComponent(cc.Graphics);
+          hlGraphics.fillColor = cc.color(135, 206, 250, 100); // 淺藍色半透明
+          hlGraphics.rect(-275, -22.5, 550, 45); // 繪製一個矩形
+          hlGraphics.fill();
+          highlight.parent = entryNode;
+          highlight.setSiblingIndex(0);
+        }
+      }
+    } catch (e) {
+      console.error("獲取排行榜數據時出錯:", e);
+      console.error(e.stack); // 顯示詳細錯誤堆疊
+    }
+    
+    // 創建返回按鈕（使用 Graphics 繪製）
+    let backButton = new cc.Node("BackButton");
+    backButton.width = 200;
+    backButton.height = 60;
+    backButton.position = cc.v2(0, -320);
+    backButton.parent = leaderboardNode;
+
+    // 使用 Graphics 繪製按鈕背景
+    let buttonGraphics = backButton.addComponent(cc.Graphics);
+    buttonGraphics.fillColor = cc.color(51, 122, 183, 255); // 藍色
+    buttonGraphics.rect(-100, -30, 200, 60); // 繪製矩形
+    buttonGraphics.fill();
+
+    // 添加標籤
+    let buttonLabel = new cc.Node("Label");
+    let label = buttonLabel.addComponent(cc.Label);
+    label.string = "返回主頁";
+    label.fontSize = 30;
+    label.node.color = cc.color(255, 255, 255); // 白色
+    buttonLabel.parent = backButton;
+
+    // 使用 Node 的點擊事件
+    function onBackButtonClicked() {
+      console.log("返回主頁");
+
+      // 檢查場景是否正在載入
+      if (!cc.director.isLoadingScene) {
+          // 先移除當前排行榜
+          leaderboardNode.destroy();
+          maskNode.destroy();
+          
+          // 添加延遲避免潛在問題
+          setTimeout(function() {
+              try {
+                  cc.director.loadScene("Login");
+              } catch (e) {
+                  console.error("載入場景失敗:", e);
+                  
+                  // 如果載入失敗，嘗試重啟遊戲
+                  cc.game.restart();
+              }
+          }, 200);
+      } else {
+          console.log("場景正在載入中，請稍後再試");
+      }
+    }
+
+    // 使用 Node 的點擊事件而非 Button 組件
+    backButton.on(cc.Node.EventType.TOUCH_END, onBackButtonClicked);
   }
 }
 
