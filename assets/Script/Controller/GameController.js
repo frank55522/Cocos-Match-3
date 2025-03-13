@@ -108,5 +108,30 @@ cc.Class({
     console.log(`自動執行消除操作: (${pos1.x},${pos1.y}) <-> (${pos2.x},${pos2.y})`);
     this.gridScript.selectCell(pos1);
     this.gridScript.selectCell(pos2);
+  },
+
+  restartGame() {
+    console.log("GameController: 正在重啟遊戲...");
+    
+    // 停止遊戲中的計時器
+    if (this.gameModel && this.gameModel.thinkingTimer) {
+        clearInterval(this.gameModel.thinkingTimer);
+        this.gameModel.thinkingTimer = null;
+    }
+    
+    // 清除所有運行中的動作
+    this.node.stopAllActions();
+    
+    // 嘗試載入登入場景
+    try {
+        cc.director.loadScene("Login");
+    } catch (e) {
+        console.error("載入Login場景失敗，嘗試重啟遊戲:", e);
+        try {
+            cc.game.restart();
+        } catch (err) {
+            console.error("重啟遊戲失敗:", err);
+        }
+    }
   }
 });

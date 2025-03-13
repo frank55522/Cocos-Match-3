@@ -1032,12 +1032,13 @@ export default class GameModel {
     titleNode.parent = leaderboardNode;
     
     // 獲取排行榜數據
+    let leaderboardManager = null;
     try {
       const LeaderboardManagerClass = require("../Manager/LeaderboardManager");
       // 建立一個新的節點來掛載元件
       let leaderboardMgrNode = new cc.Node('LeaderboardManager');
       // 添加 LeaderboardManager 元件
-      let leaderboardManager = leaderboardMgrNode.addComponent(LeaderboardManagerClass);
+      leaderboardManager = leaderboardMgrNode.addComponent(LeaderboardManagerClass);
       
       leaderboardManager.initialize();
       let leaderboard = leaderboardManager.getLeaderboard();
@@ -1099,7 +1100,7 @@ export default class GameModel {
     let backButton = new cc.Node("BackButton");
     backButton.width = 200;
     backButton.height = 60;
-    backButton.position = cc.v2(0, -320);
+    backButton.position = cc.v2(-125, -320);
     backButton.parent = leaderboardNode;
 
     // 使用 Graphics 繪製按鈕背景
@@ -1116,7 +1117,28 @@ export default class GameModel {
     label.node.color = cc.color(255, 255, 255); // 白色
     buttonLabel.parent = backButton;
 
-    // 使用 Node 的點擊事件
+    // 創建清除排行榜按鈕
+    let clearButton = new cc.Node("ClearButton");
+    clearButton.width = 200;
+    clearButton.height = 60;
+    clearButton.position = cc.v2(125, -320);
+    clearButton.parent = leaderboardNode;
+
+    // 使用 Graphics 繪製按鈕背景
+    let clearButtonGraphics = clearButton.addComponent(cc.Graphics);
+    clearButtonGraphics.fillColor = cc.color(217, 83, 79, 255); // 紅色
+    clearButtonGraphics.rect(-100, -30, 200, 60); // 繪製矩形
+    clearButtonGraphics.fill();
+
+    // 添加標籤
+    let clearButtonLabel = new cc.Node("Label");
+    let clearLabel = clearButtonLabel.addComponent(cc.Label);
+    clearLabel.string = "清除排行榜";
+    clearLabel.fontSize = 30;
+    clearLabel.node.color = cc.color(255, 255, 255); // 白色
+    clearButtonLabel.parent = clearButton;
+
+    // 返回主頁按鈕點擊事件
     function onBackButtonClicked() {
       console.log("返回主頁");
 
@@ -1142,8 +1164,193 @@ export default class GameModel {
       }
     }
 
-    // 使用 Node 的點擊事件而非 Button 組件
+    // 清除排行榜按鈕點擊事件
+    function onClearButtonClicked(event) {
+      console.log("清除排行榜");
+      
+      // 創建確認對話框
+      let confirmDialog = new cc.Node("ConfirmDialog");
+      confirmDialog.width = 400;
+      confirmDialog.height = 200;
+      
+      // 使用繪圖元件來畫一個白色矩形
+      let dialogGraphics = confirmDialog.addComponent(cc.Graphics);
+      dialogGraphics.fillColor = cc.color(248, 249, 250, 255); // 淺灰色
+      dialogGraphics.rect(-200, -100, 400, 200); // 在節點中央繪製一個矩形 (x, y, 寬, 高)
+      dialogGraphics.fill();
+      
+      // 添加邊框
+      dialogGraphics.strokeColor = cc.color(0, 0, 0, 100);
+      dialogGraphics.lineWidth = 2;
+      dialogGraphics.rect(-200, -100, 400, 200);
+      dialogGraphics.stroke();
+      
+      confirmDialog.parent = canvas.node;
+      
+      // 添加提示文字
+      let textNode = new cc.Node("Text");
+      let textLabel = textNode.addComponent(cc.Label);
+      textLabel.string = "確定要清除所有排行榜紀錄嗎？\n此操作無法復原。";
+      textLabel.fontSize = 24;
+      textLabel.lineHeight = 30;
+      textLabel.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+      textLabel.node.color = cc.color(0, 0, 0); // 黑色
+      textNode.position = cc.v2(0, 30);
+      textNode.parent = confirmDialog;
+      
+      // 創建確認按鈕
+      let confirmButton = new cc.Node("ConfirmButton");
+      confirmButton.width = 120;
+      confirmButton.height = 50;
+      confirmButton.position = cc.v2(-80, -50);
+      confirmButton.parent = confirmDialog;
+      
+      // 使用 Graphics 繪製按鈕背景
+      let confirmBtnGraphics = confirmButton.addComponent(cc.Graphics);
+      confirmBtnGraphics.fillColor = cc.color(220, 53, 69, 255); // 紅色
+      confirmBtnGraphics.rect(-60, -25, 120, 50); // 繪製矩形
+      confirmBtnGraphics.fill();
+      
+      // 添加標籤
+      let confirmBtnLabel = new cc.Node("Label");
+      let confirmLbl = confirmBtnLabel.addComponent(cc.Label);
+      confirmLbl.string = "確定";
+      confirmLbl.fontSize = 24;
+      confirmLbl.node.color = cc.color(255, 255, 255); // 白色
+      confirmBtnLabel.parent = confirmButton;
+      
+      // 創建取消按鈕
+      let cancelButton = new cc.Node("CancelButton");
+      cancelButton.width = 120;
+      cancelButton.height = 50;
+      cancelButton.position = cc.v2(80, -50);
+      cancelButton.parent = confirmDialog;
+      
+      // 使用 Graphics 繪製按鈕背景
+      let cancelBtnGraphics = cancelButton.addComponent(cc.Graphics);
+      cancelBtnGraphics.fillColor = cc.color(108, 117, 125, 255); // 灰色
+      cancelBtnGraphics.rect(-60, -25, 120, 50); // 繪製矩形
+      cancelBtnGraphics.fill();
+      
+      // 添加標籤
+      let cancelBtnLabel = new cc.Node("Label");
+      let cancelLbl = cancelBtnLabel.addComponent(cc.Label);
+      cancelLbl.string = "取消";
+      cancelLbl.fontSize = 24;
+      cancelLbl.node.color = cc.color(255, 255, 255); // 白色
+      cancelBtnLabel.parent = cancelButton;
+      
+      // 確認按鈕事件
+      confirmButton.on(cc.Node.EventType.TOUCH_END, () => {
+      if (leaderboardManager) {
+        try {
+          // 清除排行榜數據
+          cc.sys.localStorage.removeItem('leaderboard');
+          console.log("排行榜數據已清除");
+          
+          // 關閉確認對話框
+          confirmDialog.destroy();
+          
+          // 顯示提示訊息
+          const Toast = require('../Utils/Toast');
+          Toast("排行榜已清除", { duration: 2, gravity: "CENTER" });
+          
+          // 移除排行榜元素，顯示"已清除"訊息
+          leaderboardNode.removeAllChildren();
+          
+          // 添加清除成功訊息
+          let clearedNode = new cc.Node("ClearedMessage");
+          let clearedLabel = clearedNode.addComponent(cc.Label);
+          clearedLabel.string = "排行榜已清空\n請點擊下方按鈕返回主頁";
+          clearedLabel.fontSize = 36;
+          clearedLabel.lineHeight = 50;
+          clearedLabel.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+          clearedLabel.node.color = cc.color(44, 62, 80);
+          clearedNode.position = cc.v2(0, 50);
+          clearedNode.parent = leaderboardNode;
+          
+          // 創建返回按鈕
+          let backBtn = new cc.Node("BackToHomeButton");
+          backBtn.width = 200;
+          backBtn.height = 60;
+          backBtn.position = cc.v2(0, -50);
+          backBtn.parent = leaderboardNode;
+          
+          // 使用 Graphics 繪製按鈕背景
+          let backBtnGraphics = backBtn.addComponent(cc.Graphics);
+          backBtnGraphics.fillColor = cc.color(51, 122, 183);
+          backBtnGraphics.rect(-100, -30, 200, 60);
+          backBtnGraphics.fill();
+          
+          // 添加按鈕組件增強交互性
+          let btnComp = backBtn.addComponent(cc.Button);
+          btnComp.transition = cc.Button.Transition.COLOR;
+          btnComp.normalColor = cc.color(51, 122, 183);
+          btnComp.pressedColor = cc.color(40, 96, 144);
+          btnComp.hoverColor = cc.color(71, 142, 203);
+          
+          // 添加標籤
+          let backBtnLabel = new cc.Node("Label");
+          let backLbl = backBtnLabel.addComponent(cc.Label);
+          backLbl.string = "返回主頁";
+          backLbl.fontSize = 30;
+          backLbl.node.color = cc.color(255, 255, 255);
+          backBtnLabel.parent = backBtn;
+          
+          // 返回按鈕事件 - 使用GameController重啟
+          backBtn.on(cc.Node.EventType.TOUCH_END, () => {
+            console.log("點擊返回主頁按鈕 - 使用GameController重啟");
+            
+            // 防止重複點擊
+            backBtn.getComponent(cc.Button).interactable = false;
+            
+            // 顯示加載提示
+            Toast("正在返回主頁...", { duration: 1, gravity: "CENTER" });
+            
+            // 找到GameController引用
+            const gameScene = cc.find("Canvas/GameScene");
+            if (gameScene) {
+              const gameController = gameScene.getComponent("GameController");
+              if (gameController) {
+                // 移除UI元素
+                leaderboardNode.destroy();
+                maskNode.destroy();
+                
+                // 延遲一下以確保UI已經被移除
+                setTimeout(() => {
+                  if (typeof gameController.restartGame === 'function') {
+                    gameController.restartGame();
+                  } else {
+                    console.error("GameController中找不到restartGame方法");
+                    try {
+                      cc.director.loadScene("Login");
+                    } catch (e) {
+                      console.error("載入場景失敗:", e);
+                      cc.game.restart();
+                    }
+                  }
+                }, 300);
+              } else {
+                console.error("找不到GameController組件");
+              }
+            } else {
+              console.error("找不到GameScene節點");
+            }
+          });
+        } catch (e) {
+          console.error("清除排行榜時出錯:", e);
+        }
+      }
+      });
+      // 取消按鈕事件
+      cancelButton.on(cc.Node.EventType.TOUCH_END, function() {
+        // 關閉確認對話框
+        confirmDialog.destroy();
+      });
+    }
+
     backButton.on(cc.Node.EventType.TOUCH_END, onBackButtonClicked);
+    clearButton.on(cc.Node.EventType.TOUCH_END, onClearButtonClicked);
   }
 }
 
