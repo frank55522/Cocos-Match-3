@@ -541,6 +541,9 @@ export default class GameModel {
     
     this.addRowBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
     this.addColBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
+
+    // 獎勵 250 金幣
+    this.earnSpecialComboBonusCoin(250, "直線+直線");
   }
 
   straightPlusWrap(model1, model2) {
@@ -583,6 +586,9 @@ export default class GameModel {
     this.addColBomb(this.curTime, cc.v2(bombPos.x+1, bombPos.y));
     this.addColBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
     this.addColBomb(this.curTime, cc.v2(bombPos.x-1, bombPos.y));
+
+    // 獎勵 400 金幣
+    this.earnSpecialComboBonusCoin(400, "直線+爆炸");
   }
 
   straightPlusBird(model1, model2) {
@@ -599,6 +605,9 @@ export default class GameModel {
       }
     }
     this.processBomb(bombModels, 1);
+
+    // 獎勵 600 金幣
+    this.earnSpecialComboBonusCoin(600, "直線+鳥");
   }
 
   wrapPlusWrap(model1, model2) {
@@ -619,6 +628,9 @@ export default class GameModel {
             }
         }
     }
+
+    // 獎勵 500 金幣
+    this.earnSpecialComboBonusCoin(500, "爆炸+爆炸");
   }
 
   wrapPlusBird(model1, model2) {
@@ -635,6 +647,9 @@ export default class GameModel {
       }
     }
     this.processBomb(bombModels, 1);
+
+    // 獎勵 750 金幣
+    this.earnSpecialComboBonusCoin(750, "爆炸+鳥");
   }
 
   birdPlusBird() {
@@ -644,6 +659,9 @@ export default class GameModel {
       }
     }
     this.curTime += ANITIME.BOMB_BIRD_DELAY;
+
+    // 獎勵 1000 金幣
+    this.earnSpecialComboBonusCoin(1000, "鳥+鳥");
   }
 
 
@@ -1351,6 +1369,19 @@ export default class GameModel {
 
     backButton.on(cc.Node.EventType.TOUCH_END, onBackButtonClicked);
     clearButton.on(cc.Node.EventType.TOUCH_END, onClearButtonClicked);
+  }
+
+  // 特殊合併獎勵金幣
+  earnSpecialComboBonusCoin(amount, comboName) {
+    this.earnCoin(amount);
+    console.log(`特殊組合[${comboName}]獎勵 ${amount} 金幣！`);
+    
+    // 顯示特殊獎勵提示
+    const Toast = require('../Utils/Toast');
+    Toast(`特殊組合：${comboName}\n獎勵 ${amount} 金幣！`, { 
+      duration: 1.5, 
+      gravity: "CENTER" 
+    });
   }
 }
 
