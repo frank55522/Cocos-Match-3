@@ -10,6 +10,7 @@ export default class CellModel {
     this.cmd = [];
     this.isDeath = false;
     this.objecCount = Math.floor(Math.random() * 1000);
+    this.goalMinus = false;
   }
 
   init(type) {
@@ -65,13 +66,14 @@ export default class CellModel {
     this.y = pos.y;
   }
 
-  toDie(playTime) {
+  toDie(playTime, goalMinus) {
     this.cmd.push({
       action: "toDie",
       playTime: playTime,
       keepTime: ANITIME.DIE
     });
     this.isDeath = true;
+    this.goalMinus = goalMinus;
   }
 
   toShake(playTime) {

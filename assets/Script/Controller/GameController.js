@@ -20,9 +20,12 @@ cc.Class({
     hintTimer: {
       default: null,
       type: cc.Node
+    },
+    goalLeftLabel: {
+      default: null,
+      type: cc.Node
     }
   },
-
 
   // use this for initialization
   onLoad: function () {
@@ -30,6 +33,10 @@ cc.Class({
       // 動態查找並初始化
       this.audioSource = cc.find("Canvas/AudioSource").getComponent(cc.AudioSource);
     }
+    if (!this.goalLeftLabel) {
+      this.goalLeftLabel = cc.find("Canvas/Goal/Goal Left");
+    }
+
     let audioButton = this.node.parent.getChildByName('audioButton')
     audioButton.on('click', this.callback, this)
     this.gameModel = new GameModel();
@@ -41,9 +48,11 @@ cc.Class({
     this.audioSource = cc.find('Canvas/GameScene')._components[1].audio;
     this.hintTimerScript = this.hintTimer.getComponent("HintTimer");
     this.hintTimerScript.setGameController(this);
+    this.goalLeftLabelScript = this.goalLeftLabel.getComponent("GoalLeftView");
   },
 
   start: function() {
+    this.goalLeftLabelScript.setGoalLeft(this.gameModel.getGoalLeft());
     this.gameModel.startThinkingTimer();
     this.gridScript.setHints(this.getHints());
     this.hintTimerScript.setInterval(2);
@@ -64,7 +73,6 @@ cc.Class({
   },
 
   getGameModel() {
-    console.log("getGameModel called");
     return this.gameModel;
   },
 
@@ -98,6 +106,7 @@ cc.Class({
 
   logicCalculateEnd: function() {
     this.gridScript.setHints(this.getHints());
+    console.log(`Logic Goal Left${this.gameModel.goalLeft}`);
   },
 
   animeEnd: function() {
@@ -133,5 +142,13 @@ cc.Class({
             console.error("重啟遊戲失敗:", err);
         }
     }
+  },
+
+  goalLeftMinus() {
+    this.goalLeftLabelScript.goalLeftMinus();
+  },
+
+  checkGoalLeft() {
+    
   }
 });

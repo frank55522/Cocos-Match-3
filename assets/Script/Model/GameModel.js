@@ -15,6 +15,7 @@ export default class GameModel {
     this.movesLeft = 1;
     this.isGameOver = false;
     this.goalLeft = 99999;
+    this.goalModel = {type: [], status: []};
     this.totalCrushed = 0; // 記錄一輪要消除的數量
     this.coin = 0;
     this.thinkingTimeLimit = 10; // 玩家有 10 秒時間思考
@@ -90,9 +91,50 @@ export default class GameModel {
     this.cells[x][y].setStartXY(y, x);
   }
 
-
   initWithData(data) {
     // to do
+  }
+
+  setRandomGoalModel() {
+    let randomNum = Math.floor(Math.random() * 11);
+    switch(randomNum) {
+    case 0:   // any cells
+      this.goalLeft = 200;
+      break;
+    case 1:   // 指定單一顏色
+      this.goalLeft = 50;
+      break;
+    case 2:   // 直線
+      this.goalLeft = 5;
+      break;
+    case 3:   // 爆破
+      this.goalLeft = 5;
+      break;
+    case 4:   // 鳥
+      this.goalLeft = 3;
+      break;
+    case 5:   // 直線 * 2
+      this.goalLeft = 4;
+      break;
+    case 6:   // 直線 + 爆破
+      this.goalLeft = 3;
+      break;
+    case 7:   // 直線 + 鳥
+      this.goalLeft = 2;
+      break;
+    case 8:   // 爆破 * 2
+      this.goalLeft = 3;
+      break;
+    case 9:   // 爆破 + 鳥
+      this.goalLeft = 2;
+      break;
+    case 10:  // 鳥 * 2
+      this.goalLeft = 1;
+      break;
+    default:
+      console.log("GameModel.setRandomGoalModel(): random number error");
+      return;
+    }
   }
 
   /**
@@ -319,8 +361,6 @@ export default class GameModel {
         let hasNextCrush = nextCheckPoint.length > 0;
 
         setTimeout(() => {
-            this.goalLeft = Math.max(0, this.goalLeft - copyTotalCrushed);
-            console.log(`goalLeft: ${this.goalLeft}`);
             this.earnCoinsByCrush(copyTotalCrushed);
 
             if (copyCycleCount > 1 && hasNextCrush) {
@@ -505,7 +545,6 @@ export default class GameModel {
               }
             }
           }
-          //this.crushCell(model.x, model.y);
         }
       }, this);
       if (bombModels.length > 0) {
@@ -709,15 +748,31 @@ export default class GameModel {
     let model = this.cells[y][x];
     this.pushToChangeModels(model);
     if (needShake) {
-        model.toShake(this.curTime);
+      model.toShake(this.curTime);
+    }
+
+    let goalMinus = false;
+    if (this.goalLeft > 0 && this.isConformGoal(model)) {
+      goalMinus = true;
+      this.goalLeft--;
     }
 
     this.totalCrushed++;
 
     let shakeTime = needShake ? ANITIME.DIE_SHAKE : 0;
-    model.toDie(this.curTime + shakeTime);
+    model.toDie(this.curTime + shakeTime, goalMinus);
     this.addCrushEffect(this.curTime + shakeTime, cc.v2(model.x, model.y), step);
     this.cells[y][x] = null;
+  }
+  isConformGoal(model) {
+    return true;
+  }
+
+  setGoalLeft(num) {
+    this.goalLeft = num;
+  }
+  getGoalLeft() {
+    return this.goalLeft;
   }
 
   earnCoinsByCrush(crushQuantity) {
@@ -784,9 +839,6 @@ export default class GameModel {
       clearInterval(this.thinkingTimer);
       this.thinkingTimer = null;
     }
-  
-    // 引爆場上剩餘特殊動物
-    // To do
   
     console.log(`已通關，剩餘步數(${this.movesLeft})轉成金幣(${this.movesLeft * 15})`);
   
@@ -875,7 +927,7 @@ export default class GameModel {
     clearInterval(this.thinkingTimer);
   }
 
-  // return value: [hints], hint: [crushCells]
+  // return { value: [hints], hint: [crushCells] }
   findAllHints() {
     //console.log(JSON.stringify(this.cells)); // look board in console
     let result = [];
