@@ -40,7 +40,7 @@ cc.Class({
         }
         var actionArray = [];
         var curTime = 0;
-        let deathTime = NaN;
+        let deathTime = 0;
         for(var i in cmd){
             if( cmd[i].playTime > curTime){
                 var delay = cc.delayTime(cmd[i].playTime - curTime);
@@ -57,12 +57,13 @@ cc.Class({
                     let animation = this.node.getComponent(cc.Animation);
                     animation.play("effect");
                     actionArray.push(cc.delayTime(ANITIME.BOMB_BIRD_DELAY));
+                    deathTime += ANITIME.BOMB_BIRD_DELAY;
                 }
                 var callFunc = cc.callFunc(function(){
                     this.node.destroy();
                 },this);
                 actionArray.push(callFunc);
-                deathTime = curTime;
+                deathTime += curTime;
             }
             else if(cmd[i].action == "setVisible"){
                 let isVisible = cmd[i].isVisible;
@@ -84,7 +85,7 @@ cc.Class({
         }
 
         // goalLeft--(view)
-        if (this.model.goalMinus && deathTime) {
+        if (this.model.goalMinus) {
             setTimeout(() => { this.gridViewScript.goalLeftMinus(); }, deathTime * 1000);
         }
         /**

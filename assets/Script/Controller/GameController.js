@@ -52,7 +52,7 @@ cc.Class({
   },
 
   start: function() {
-    this.goalLeftLabelScript.setGoalLeft(this.gameModel.getGoalLeft());
+    this.setUIGoalLeft(this.getLogicGoalLeft());
     this.gameModel.startThinkingTimer();
     this.gridScript.setHints(this.getHints());
     this.hintTimerScript.setInterval(2);
@@ -106,7 +106,6 @@ cc.Class({
 
   logicCalculateEnd: function() {
     this.gridScript.setHints(this.getHints());
-    console.log(`Logic Goal Left${this.gameModel.goalLeft}`);
   },
 
   animeEnd: function() {
@@ -144,11 +143,28 @@ cc.Class({
     }
   },
 
-  goalLeftMinus() {
+  getLogicGoalLeft() {
+    return this.gameModel.getGoalLeft();
+  },
+  setLogicGoalLeft(num) {
+    this.gameModel.setGoalLeft(num);
+  },
+  getUIGoalLeft() {
+    return this.goalLeftLabelScript.getGoalLeft();
+  },
+  setUIGoalLeft(num) {
+    this.goalLeftLabelScript.setGoalLeft(num);
+  },
+
+  uiGoalLeftMinus() {
     this.goalLeftLabelScript.goalLeftMinus();
   },
 
   checkGoalLeft() {
-    
+    console.log(`Logic Goal Left: ${this.getLogicGoalLeft()}, UI Goal Left: ${this.getUIGoalLeft()}`);
+    if (this.getLogicGoalLeft() !== this.getUIGoalLeft()) {
+      console.error("邏輯和UI的goalLeft不一致，自動校正");
+      this.setUIGoalLeft(this.getLogicGoalLeft());
+    }
   }
 });

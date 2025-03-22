@@ -194,7 +194,7 @@ cc.Class({
         this.isInPlayAni = true;
         this.node.runAction(cc.sequence(cc.delayTime(time),cc.callFunc(function(){
             this.isInPlayAni = false;
-            //console.log("call controller function checkEndGame");
+            this.controller.checkGoalLeft();
             this.controller.checkEndGame();
             this.audioUtils.playContinuousMatch(step);
             if (!this.controller.isEndGame()) this.controller.animeEnd();
@@ -250,6 +250,6 @@ cc.Class({
     },
 
     goalLeftMinus: function() {
-        this.controller.goalLeftMinus();
+        this.controller.uiGoalLeftMinus();
     }
 });
