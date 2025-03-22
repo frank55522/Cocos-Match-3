@@ -9,6 +9,11 @@ export const CELL_TYPE = {
   F: 6,
   BIRD: 7
 }
+// 反向查找
+export const CELL_TYPE_REVERSE = Object.fromEntries(
+  Object.entries(CELL_TYPE).map(([key, value]) => [value, key])
+);
+
 export const CELL_BASENUM = 6;
 export const CELL_STATUS = {
   COMMON: 0,
