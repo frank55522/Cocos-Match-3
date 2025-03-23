@@ -17,9 +17,12 @@ cc.Class({
       type: cc.AudioClip,
       default: null,
     },
-    // 新增輸入框元件
     playerIdInput: {
       type: cc.EditBox,
+      default: null,
+    },
+    LeaderboardButton: {
+      type: cc.Button,
       default: null,
     }
   },
@@ -30,7 +33,7 @@ cc.Class({
     // 載入儲存的玩家資料
     this.loadPlayerData();
     
-    // 設置登錄按鈕事件 - 這裡缺少按鈕點擊事件的設定
+    // 設置登錄按鈕事件
     if (this.loginButton) {
       this.loginButton.node.on('click', this.onStartGame, this);
     }

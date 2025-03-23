@@ -113,24 +113,78 @@ cc.Class({
   restartGame() {
     console.log("GameController: 正在重啟遊戲...");
     
-    // 停止遊戲中的計時器
-    if (this.gameModel && this.gameModel.thinkingTimer) {
-        clearInterval(this.gameModel.thinkingTimer);
-        this.gameModel.thinkingTimer = null;
+    // 停止所有計時器
+    if (this.gameModel) {
+        // 停止遊戲中的思考時間計時器
+        if (this.gameModel.thinkingTimer) {
+            clearInterval(this.gameModel.thinkingTimer);
+            this.gameModel.thinkingTimer = null;
+        }
+        
+        // 標記遊戲結束，避免任何進行中的邏輯
+        this.gameModel.isGameOver = true;
+    }
+    
+    // 停止提示計時器
+    if (this.hintTimerScript) {
+        this.hintTimerScript.setWorkable(false);
     }
     
     // 清除所有運行中的動作
     this.node.stopAllActions();
     
-    // 嘗試載入登入場景
+    // 找到場景中所有節點並停止動作
+    let canvas = cc.director.getScene().getChildByName('Canvas');
+    if (canvas) {
+        let allNodes = [];
+        this.collectAllNodes(canvas, allNodes);
+        
+        // 停止所有節點的動作和計時器
+        allNodes.forEach(node => {
+            node.stopAllActions();
+        });
+    }
+    
+    // 確保音效停止
+    if (this.audioSource && this.audioSource._state === 1) {
+        this.audioSource.pause();
+    }
+    
+    // 預加載登入場景，然後載入
     try {
-        cc.director.loadScene("Login");
+        cc.director.preloadScene("Login", function() {
+            cc.director.loadScene("Login");
+        });
     } catch (e) {
-        console.error("載入Login場景失敗，嘗試重啟遊戲:", e);
+        console.error("載入Login場景失敗，嘗試直接切換:", e);
         try {
-            cc.game.restart();
+            // 直接切換場景
+            cc.director.loadScene("Login");
         } catch (err) {
-            console.error("重啟遊戲失敗:", err);
+            console.error("直接載入場景失敗，嘗試重啟遊戲:", err);
+            try {
+                cc.game.restart();
+            } catch (finalErr) {
+                console.error("重啟遊戲失敗:", finalErr);
+                // 顯示錯誤提示給用戶
+                const Toast = require('../Utils/Toast');
+                if (Toast) {
+                    Toast("遊戲重啟失敗，請重新開啟應用", { duration: 3, gravity: "CENTER" });
+                }
+            }
+        }
+    }
+  },
+
+  collectAllNodes(node, result) {
+    if (!node) return;
+    
+    result.push(node);
+    
+    const children = node.children;
+    if (children && children.length > 0) {
+        for (let i = 0; i < children.length; i++) {
+            this.collectAllNodes(children[i], result);
         }
     }
   }

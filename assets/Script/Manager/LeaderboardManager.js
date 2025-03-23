@@ -1,4 +1,3 @@
-// LeaderboardManager.js - 更新版
 cc.Class({
   extends: cc.Component,
   
@@ -15,6 +14,10 @@ cc.Class({
     showLoadingIndicator: {
       default: true,
       tooltip: "加載排行榜時是否顯示讀取指示器"
+    },
+    requestTimeout: {
+      default: 5,
+      tooltip: "請求超時時間(秒)"
     }
   },
   
@@ -29,6 +32,7 @@ cc.Class({
     this.leaderboard = [];
     this.isLoading = false;
     this.lastErrorMessage = "";
+    this.pendingRequests = [];
     
     // 加載排行榜數據
     this.loadLeaderboard();
@@ -42,15 +46,25 @@ cc.Class({
   },
   
   // 載入排行榜數據
-  loadLeaderboard(callback) {
-    if (this.isLoading) {
-      if (callback) callback(new Error("排行榜正在加載中"), null);
-      return;
+  loadLeaderboard(callback, forceRefresh) {
+    // 確保清除之前的超時計時器
+    if (this._timeoutId) {
+        clearTimeout(this._timeoutId);
     }
+    
+    // 如果正在加載中，添加到待處理隊列
+    if (this.isLoading) {
+        if (callback) {
+            this.pendingRequests.push(callback);
+        }
+        return;
+    }
+    
+    console.log("LeaderboardManager: 開始載入排行榜數據, 強制刷新:", forceRefresh);
     
     this.isLoading = true;
     if (this.showLoadingIndicator) {
-      this.showLoading(true);
+        this.showLoading(true);
     }
     
     // 先加載本地緩存的排行榜數據
@@ -58,7 +72,7 @@ cc.Class({
     
     // 如果本地沒有數據，創建一個空陣列
     if (!this.leaderboard || !Array.isArray(this.leaderboard)) {
-      this.leaderboard = [];
+        this.leaderboard = [];
     }
     
     let self = this;
@@ -66,55 +80,102 @@ cc.Class({
     
     // 檢查是否有網絡連接
     if (serviceComp && !serviceComp.offlineMode) {
-      serviceComp.getLeaderboard(function(err, data) {
-        self.isLoading = false;
+        // 設置一個更長的超時時間 - 15秒
+        const timeoutDuration = 15000;
         
-        if (self.showLoadingIndicator) {
-          self.showLoading(false);
-        }
+        this._timeoutId = setTimeout(() => {
+            // 只有在尚未獲得回應時才處理超時
+            if (self.isLoading) {
+                console.warn("獲取排行榜數據超時，超時設置:", timeoutDuration, "ms");
+                self.isLoading = false;
+                
+                if (self.showLoadingIndicator) {
+                    self.showLoading(false);
+                }
+                
+                self.lastErrorMessage = "請求超時";
+                
+                // 處理回調
+                self.handleCallbacks(new Error("排行榜請求超時"), self.leaderboard);
+            }
+        }, timeoutDuration);
         
-        if (err) {
-          console.error("加載排行榜數據時出錯：", err);
-          // 保存錯誤信息，但不顯示給用戶
-          self.lastErrorMessage = err.message || "未知錯誤";
-          
-          // 已經使用本地數據，所以這裡只需回調
-          if (callback) callback(err, self.leaderboard);
-        } else {
-          self.lastErrorMessage = "";
-          
-          // 確保數據是有效的陣列
-          if (data && Array.isArray(data)) {
-            self.leaderboard = data;
-            // 確保數據量不超過最大顯示數量
-            if (self.leaderboard.length > self.maxEntries) {
-              self.leaderboard = self.leaderboard.slice(0, self.maxEntries);
+        // 使用強制刷新選項，避免獲取到舊數據
+        serviceComp.getLeaderboard(function(err, data) {
+            // 清除超時計時器
+            clearTimeout(self._timeoutId);
+            self._timeoutId = null;
+            
+            self.isLoading = false;
+            
+            if (self.showLoadingIndicator) {
+                self.showLoading(false);
             }
             
-            // 保存到本地存儲
-            cc.sys.localStorage.setItem('leaderboard', JSON.stringify(self.leaderboard));
-          } else {
-            console.warn("從服務器獲取的排行榜數據格式無效");
-          }
-          
-          if (callback) callback(null, self.leaderboard);
-        }
-      });
+            if (err) {
+                console.error("加載排行榜數據時出錯：", err);
+                // 保存錯誤信息，但不顯示給用戶
+                self.lastErrorMessage = err.message || "未知錯誤";
+                
+                // 通知待處理回調
+                self.handleCallbacks(err, self.leaderboard);
+            } else {
+                self.lastErrorMessage = "";
+                
+                // 確保數據是有效的陣列
+                if (data && Array.isArray(data)) {
+                    console.log("成功從服務器獲取排行榜數據，條目數量:", data.length);
+                    
+                    self.leaderboard = data;
+                    // 確保數據量不超過最大顯示數量
+                    if (self.leaderboard.length > self.maxEntries) {
+                        self.leaderboard = self.leaderboard.slice(0, self.maxEntries);
+                    }
+                    
+                    // 保存到本地存儲
+                    cc.sys.localStorage.setItem('leaderboard', JSON.stringify(self.leaderboard));
+                    
+                    // 通知待處理回調
+                    self.handleCallbacks(null, self.leaderboard);
+                } else {
+                    console.warn("從服務器獲取的排行榜數據格式無效");
+                    self.handleCallbacks(new Error("數據格式無效"), self.leaderboard);
+                }
+            }
+        }, forceRefresh); // 傳入強制刷新參數
     } else {
-      // 離線模式，直接使用本地數據
-      this.isLoading = false;
-      
-      if (this.showLoadingIndicator) {
-        this.showLoading(false);
-      }
-      
-      if (callback) {
-        callback(new Error("離線模式"), this.leaderboard);
-      }
+        // 離線模式，直接使用本地數據
+        this.isLoading = false;
+        
+        if (this.showLoadingIndicator) {
+            this.showLoading(false);
+        }
+        
+        console.log("處於離線模式，使用本地排行榜數據");
+        
+        // 通知待處理回調
+        this.handleCallbacks(new Error("離線模式"), this.leaderboard);
     }
     
     // 無論如何，都返回已加載的本地數據
     return this.leaderboard;
+  },
+  
+  // 處理所有待處理的回調
+  handleCallbacks(err, data) {
+    // 執行傳入的回調
+    if (this.pendingRequests.length > 0) {
+      let callbacks = [...this.pendingRequests];
+      this.pendingRequests = [];
+      
+      callbacks.forEach(function(callback) {
+        try {
+          callback(err, data || this.leaderboard);
+        } catch (e) {
+          console.error("執行排行榜回調出錯:", e);
+        }
+      }, this);
+    }
   },
   
   // 從本地存儲加載排行榜（作為備用）
@@ -197,31 +258,74 @@ cc.Class({
   
   // 添加新的玩家成績
   addScore(playerId, score, callback) {
-    if (!playerId) {
-      if (callback) callback(new Error("玩家 ID 無效"), null);
-      return -1;
+    // 確保清除之前的超時計時器
+    if (this._addScoreTimeoutId) {
+        clearTimeout(this._addScoreTimeoutId);
     }
+    
+    if (!playerId) {
+        if (callback) callback(new Error("玩家 ID 無效"), null);
+        return -1;
+    }
+    
+    console.log("LeaderboardManager: 開始添加分數, 玩家:", playerId, "分數:", score);
     
     let self = this;
     let serviceComp = this.leaderboardService.getComponent('LeaderboardService');
     
+    // 先更新本地記錄以便立即顯示
+    let localRank = this.addScoreLocally(playerId, score);
+    console.log("本地排行榜更新完成, 玩家:", playerId, "本地排名:", localRank);
+    
+    // 如果處於離線模式，直接返回
+    if (!serviceComp || serviceComp.offlineMode) {
+        console.log("處於離線模式，僅更新本地排行榜");
+        if (callback) callback(new Error("離線模式"), { rank: localRank });
+        return localRank;
+    }
+    
+    // 設置超時計時器 - 15秒
+    const timeoutDuration = 15000;
+    
+    this._addScoreTimeoutId = setTimeout(() => {
+        console.warn("添加分數請求超時，超時設置:", timeoutDuration, "ms");
+        if (callback) callback(new Error("請求超時"), { rank: localRank });
+    }, timeoutDuration);
+    
+    console.log("正在向服務器發送分數更新請求");
+    
+    // 嘗試發送到服務器
     serviceComp.addScore(playerId, score, function(err, result) {
-      if (err) {
-        console.error("添加分數時出錯：", err);
+        // 清除超時計時器
+        clearTimeout(self._addScoreTimeoutId);
+        self._addScoreTimeoutId = null;
         
-        // 使用本地添加作為備用
-        let rank = self.addScoreLocally(playerId, score);
-        if (callback) callback(err, { rank: rank });
-      } else {
-        // 更新本地排行榜
-        self.loadLeaderboard(function() {
-          if (callback) callback(null, result);
-        });
-      }
+        if (err) {
+            console.error("向服務器添加分數時出錯：", err);
+            
+            // 已經更新了本地排行榜，回調返回本地排名
+            if (callback) callback(err, { rank: localRank });
+        } else {
+            console.log("成功向服務器添加分數，伺服器回應:", result);
+            console.log("伺服器返回的排名:", result && result.rank ? result.rank : "未知");
+            
+            // 重要：確保數據已經被服務器處理
+            console.log("等待伺服器處理完成...");
+            
+            // 為了確保伺服器有時間處理，我們延遲回調
+            setTimeout(() => {
+                console.log("伺服器處理完成，準備加載最新排行榜");
+                
+                // 返回回調，讓 GameModel 處理後續流程
+                if (callback) {
+                    callback(null, result || { rank: localRank });
+                }
+            }, 500); // 添加適當的延遲
+        }
     });
     
-    // 返回當前本地緩存中的排名（可能不準確，等待回調獲取正確排名）
-    return this.getRank(playerId);
+    // 返回當前本地緩存中的排名
+    return localRank;
   },
   
   // 本地添加分數（備用方法）
