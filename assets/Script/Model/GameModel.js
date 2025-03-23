@@ -1,6 +1,7 @@
 import CellModel from "./CellModel";
-import { mergePointArray, exclusivePoint } from "../Utils/ModelUtils"
+import { mergePointArray, exclusivePoint } from "../Utils/ModelUtils";
 import { CELL_TYPE, CELL_BASENUM, CELL_STATUS, GRID_WIDTH, GRID_HEIGHT, ANITIME } from "./ConstValue";
+import { GoalModel } from "./GoalModel";
 import Toast from '../Utils/Toast';
 const LeaderboardManager = require("../Manager/LeaderboardManager");
 const GlobalData = require("../Utils/GlobalData");
@@ -11,18 +12,19 @@ export default class GameModel {
     this.cellBgs = null;
     this.lastPos = cc.v2(-1, -1);
     this.cellTypeNum = 5;
-    this.cellCreateType = []; // 升成种类只在这个数组里面查找
-    this.movesLeft = 1;
+    this.cellCreateType = [];                             // 升成种类只在这个数组里面查找
+    this.movesLeft = 100;
     this.isGameOver = false;
     this.goalLeft = 99999;
-    this.goalModel = {type: [], status: []};
-    this.totalCrushed = 0; // 記錄一輪要消除的數量
+    this.goalCompleteCoins = 0;
+    this.goalModel = new GoalModel();
+    this.totalCrushed = 0;                                // 記錄一輪要消除的數量
     this.coin = 0;
-    this.thinkingTimeLimit = 10; // 玩家有 10 秒時間思考
+    this.thinkingTimeLimit = 10;                          // 玩家思考時間
     this.currentThinkingTime = this.thinkingTimeLimit;
     this.thinkingTimer = null;
-    this.isProcessing = false; // 是否正在執行消除動畫
-    this.currentHint = null; // 當前提示
+    this.isProcessing = false;                            // 是否正在執行消除動畫
+    this.currentHint = null;                              // 當前提示
   }
 
   setGameController(gameController) {
@@ -95,46 +97,9 @@ export default class GameModel {
     // to do
   }
 
-  setRandomGoalModel() {
-    let randomNum = Math.floor(Math.random() * 11);
-    switch(randomNum) {
-    case 0:   // any cells
-      this.goalLeft = 200;
-      break;
-    case 1:   // 指定單一顏色
-      this.goalLeft = 50;
-      break;
-    case 2:   // 直線
-      this.goalLeft = 5;
-      break;
-    case 3:   // 爆破
-      this.goalLeft = 5;
-      break;
-    case 4:   // 鳥
-      this.goalLeft = 3;
-      break;
-    case 5:   // 直線 * 2
-      this.goalLeft = 4;
-      break;
-    case 6:   // 直線 + 爆破
-      this.goalLeft = 3;
-      break;
-    case 7:   // 直線 + 鳥
-      this.goalLeft = 2;
-      break;
-    case 8:   // 爆破 * 2
-      this.goalLeft = 3;
-      break;
-    case 9:   // 爆破 + 鳥
-      this.goalLeft = 2;
-      break;
-    case 10:  // 鳥 * 2
-      this.goalLeft = 1;
-      break;
-    default:
-      console.log("GameModel.setRandomGoalModel(): random number error");
-      return;
-    }
+  nextGoal() {
+    [this.goalLeft, this.goalCompleteCoins] = this.goalModel.getRandomGoalModel(this.cellTypeNum);
+    this.gameController.setUIGoalLeft(this.goalLeft);
   }
 
   /**
@@ -331,6 +296,13 @@ export default class GameModel {
             else if (birdQuantity === 2) {// 鳥 * 2
                 this.birdPlusBird();
             }
+            
+            if (lineQuantity + wrapQuantity + birdQuantity === 2) {
+                if (this.goalLeft > 0 && this.goalModel.isConformGoal(model1, model2)) {
+                    this.goalLeft--;
+                    this.gameController.uiGoalLeftMinus();
+                }
+            }
         }
 
         if (!specialCrush) {
@@ -366,12 +338,6 @@ export default class GameModel {
             if (copyCycleCount > 1 && hasNextCrush) {
                 Toast(`Combo ${copyCycleCount}!`, { duration: 1, gravity: "CENTER" });
                 this.earnCoinsByStep(copyCycleCount);
-            }
-
-            if (this.goalLeft > 0) {
-                this.startThinkingTimer();
-            } else {
-                this.levelComplete();
             }
         }, this.curTime * 1000);
 
@@ -752,7 +718,7 @@ export default class GameModel {
     }
 
     let goalMinus = false;
-    if (this.goalLeft > 0 && this.isConformGoal(model)) {
+    if (this.goalLeft > 0 && this.goalModel.isConformGoal(model)) {
       goalMinus = true;
       this.goalLeft--;
     }
@@ -764,15 +730,19 @@ export default class GameModel {
     this.addCrushEffect(this.curTime + shakeTime, cc.v2(model.x, model.y), step);
     this.cells[y][x] = null;
   }
-  isConformGoal(model) {
-    return true;
-  }
 
   setGoalLeft(num) {
     this.goalLeft = num;
   }
   getGoalLeft() {
     return this.goalLeft;
+  }
+
+  drawGoalCompleteCoins() {
+    if (this.goalCompleteCoins) {
+      console.log(`完成目標 獲得${this.goalCompleteCoins}金幣`);
+      this.earnCoin(this.goalCompleteCoins);
+    }
   }
 
   earnCoinsByCrush(crushQuantity) {
@@ -803,12 +773,11 @@ export default class GameModel {
   }
 
   checkEndGame() {
-    //console.log("gameModel do checkEndGame");
-    if (!this.isGameOver) {
-      if (this.goalLeft == 0)
-        this.levelComplete();
-      else if (this.movesLeft == 0)
-        this.endGame();
+    if (!this.isGameOver && this.movesLeft === 0) {
+      this.endGame();
+    }
+    else {
+      this.startThinkingTimer();
     }
   }
 

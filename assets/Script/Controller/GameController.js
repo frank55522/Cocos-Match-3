@@ -49,10 +49,11 @@ cc.Class({
     this.hintTimerScript = this.hintTimer.getComponent("HintTimer");
     this.hintTimerScript.setGameController(this);
     this.goalLeftLabelScript = this.goalLeftLabel.getComponent("GoalLeftView");
+    this.goalLeftLabelScript.setGameController(this);
   },
 
   start: function() {
-    this.setUIGoalLeft(this.getLogicGoalLeft());
+    this.gameModel.nextGoal();
     this.gameModel.startThinkingTimer();
     this.gridScript.setHints(this.getHints());
     this.hintTimerScript.setInterval(2);
@@ -85,7 +86,6 @@ cc.Class({
   },
 
   checkEndGame() {
-    //console.log("call gameModel function checkEndGame");
     this.gameModel.checkEndGame();
   },
   isEndGame() {
@@ -166,5 +166,17 @@ cc.Class({
       console.error("邏輯和UI的goalLeft不一致，自動校正");
       this.setUIGoalLeft(this.getLogicGoalLeft());
     }
+
+    if (this.gameModel.getGoalLeft() === 0) {
+      this.gameModel.nextGoal();
+    }
+  },
+
+  goalComplete() {
+    this.gameModel.drawGoalCompleteCoins();
+  },
+
+  startThinkingTimer() {
+    this.gameModel.startThinkingTimer();
   }
 });

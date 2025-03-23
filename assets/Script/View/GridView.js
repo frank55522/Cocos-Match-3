@@ -246,7 +246,7 @@ cc.Class({
             let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
             this.cellViews[row][col].runAction(blinkAction);
         }
-        console.log(`hint swap: ${this.hints[randomIndex].swapPositions}`);
+        // console.log(`hint swap: ${this.hints[randomIndex].swapPositions}`);
     },
 
     goalLeftMinus: function() {

@@ -5,27 +5,36 @@ cc.Class({
 
     properties: {},
 
-    onLoad() {
+    onLoad: function() {
         this.label = this.getComponent(cc.Label);
         this.goalLeft = -1;
     },
 
-    updateLabel() {
+    setGameController: function(gameController) {
+        this.gameController = gameController;
+    },
+
+    updateLabel: function() {
         this.label.string = this.goalLeft;
     },
 
-    setGoalLeft(num) {
+    setGoalLeft: function(num) {
         this.goalLeft = num;
         this.updateLabel();
     },
-    getGoalLeft() {
+    getGoalLeft: function() {
         return this.goalLeft;
     },
 
-    goalLeftMinus() {
+    goalLeftMinus: function() {
         if (this.goalLeft <= 0)
             return;
+
         this.goalLeft--;
         this.updateLabel();
+
+        if (this.goalLeft === 0) {
+            this.gameController.goalComplete();
+        }
     },
 });
