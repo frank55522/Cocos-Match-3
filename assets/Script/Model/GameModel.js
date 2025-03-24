@@ -100,6 +100,7 @@ export default class GameModel {
   nextGoal() {
     [this.goalLeft, this.goalCompleteCoins] = this.goalModel.getRandomGoalModel(this.cellTypeNum);
     this.gameController.setUIGoalLeft(this.goalLeft);
+    this.gameController.setGoalTypeImg(this.goalModel.getGoalType(), this.goalModel.getSpecifyColor());
   }
 
   /**
