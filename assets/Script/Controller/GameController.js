@@ -25,9 +25,10 @@ cc.Class({
       default: null,
       type: cc.Node
     },
-    goalTypeImg: {
+    goal: {
       default: null,
-      type: cc.Node
+      type: cc.Node,
+      tooltip: "包含所有目標圖片的父節點"
     }
   },
 
@@ -40,8 +41,8 @@ cc.Class({
     if (!this.goalLeftLabel) {
       this.goalLeftLabel = cc.find("Canvas/Goal/Goal Left");
     }
-    if (!this.goalTypeImg) {
-      this.goalTypeImg = cc.find("Canvas/Goal/Goal Type Img");
+    if (!this.goal) {
+      this.goal = cc.find("Canvas/Goal");
     }
 
     let audioButton = this.node.parent.getChildByName('audioButton')
@@ -57,7 +58,7 @@ cc.Class({
     this.hintTimerScript.setGameController(this);
     this.goalLeftLabelScript = this.goalLeftLabel.getComponent("GoalLeftView");
     this.goalLeftLabelScript.setGameController(this);
-    this.goalTypeImgScript = this.goalTypeImg.getComponent("GoalTypeImgView");
+    this.goalTypeImgScript = this.goal.getComponent("GoalTypeImgView");
   },
 
   start: function() {
