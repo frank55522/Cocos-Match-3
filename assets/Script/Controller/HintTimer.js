@@ -34,7 +34,6 @@ cc.Class({
     },
 
     timerTrigger: function() {
-        console.log("HintTimer trigger");
         this.gameController.hintTimerTrigger();
         this.time = 0;
     },

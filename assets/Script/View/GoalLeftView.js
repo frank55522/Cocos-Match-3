@@ -1,41 +1,40 @@
-import GameController from "../Controller/GameController";
-import GameModel from "../Model/GameModel";
+
 
 cc.Class({
     extends: cc.Component,
 
-    properties: {
-        gameScene: {
-            type: cc.Node,
-            default: null
-        }
-    },
+    properties: {},
 
-    onLoad() {
+    onLoad: function() {
         this.label = this.getComponent(cc.Label);
+        this.goalLeft = -1;
     },
 
-    start () {
-        if (!this.gameScene) {
-            this.gameScene = cc.find("Canvas/GameScene");
-            if (!this.gameScene) {
-                console.error("GameScene node not found!");
-                return;
-            }
-        }
-
-        const gameController = this.gameScene.getComponent(GameController);
-        if (gameController) {
-            this.gameModel = gameController.getGameModel();
-            this.label.string = this.gameModel.goalLeft;
-        } else {
-            console.error("GameController not found on gameScene.");
-        }
+    setGameController: function(gameController) {
+        this.gameController = gameController;
     },
 
-    update (dt) {
-        if (this.gameModel) {
-            this.label.string =  this.gameModel.goalLeft;
+    updateLabel: function() {
+        this.label.string = this.goalLeft;
+    },
+
+    setGoalLeft: function(num) {
+        this.goalLeft = num;
+        this.updateLabel();
+    },
+    getGoalLeft: function() {
+        return this.goalLeft;
+    },
+
+    goalLeftMinus: function() {
+        if (this.goalLeft <= 0)
+            return;
+
+        this.goalLeft--;
+        this.updateLabel();
+
+        if (this.goalLeft === 0) {
+            this.gameController.goalComplete();
         }
-    }
+    },
 });

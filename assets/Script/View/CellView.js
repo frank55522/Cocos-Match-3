@@ -4,16 +4,6 @@ cc.Class({
     extends: cc.Component,
 
     properties: {
-        // foo: {
-        //    default: null,      // The default value will be used only when the component attaching
-        //                           to a node for the first time
-        //    url: cc.Texture2D,  // optional, default is typeof default
-        //    serializable: true, // optional, default is true
-        //    visible: true,      // optional, default is true
-        //    displayName: 'Foo', // optional
-        //    readonly: false,    // optional, default is false
-        // },
-        // ...
         defaultFrame:{
             default: null,
             type: cc.SpriteFrame
@@ -22,7 +12,6 @@ cc.Class({
 
     // use this for initialization
     onLoad: function () {
-        //this.model = null;
         this.isSelect = false;
     },
     initWithModel: function(model){
@@ -39,6 +28,10 @@ cc.Class({
             animation.play(model.status);
         }
     },
+    setGridViewScript: function(gridViewScript) {
+        this.gridViewScript = gridViewScript;
+    },
+
     // 执行移动动作
     updateView: function(){
         var cmd = this.model.cmd;
@@ -47,6 +40,7 @@ cc.Class({
         }
         var actionArray = [];
         var curTime = 0;
+        let deathTime = 0;
         for(var i in cmd){
             if( cmd[i].playTime > curTime){
                 var delay = cc.delayTime(cmd[i].playTime - curTime);
@@ -63,11 +57,13 @@ cc.Class({
                     let animation = this.node.getComponent(cc.Animation);
                     animation.play("effect");
                     actionArray.push(cc.delayTime(ANITIME.BOMB_BIRD_DELAY));
+                    deathTime += ANITIME.BOMB_BIRD_DELAY;
                 }
                 var callFunc = cc.callFunc(function(){
                     this.node.destroy();
                 },this);
                 actionArray.push(callFunc);
+                deathTime += curTime;
             }
             else if(cmd[i].action == "setVisible"){
                 let isVisible = cmd[i].isVisible;
@@ -87,6 +83,11 @@ cc.Class({
             }
             curTime = cmd[i].playTime + cmd[i].keepTime;
         }
+
+        // goalLeft--(view)
+        if (this.model.goalMinus) {
+            setTimeout(() => { this.gridViewScript.goalLeftMinus(); }, deathTime * 1000);
+        }
         /**
          * 智障的引擎设计，一群SB
          */
@@ -98,10 +99,7 @@ cc.Class({
         }
 
     },
-    // called every frame, uncomment this function to activate update callback
-    // update: function (dt) {
 
-    // },
     setSelect: function(flag){
         var animation = this.node.getComponent(cc.Animation);
         var bg = this.node.getChildByName("select");

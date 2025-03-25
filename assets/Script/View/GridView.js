@@ -6,16 +6,6 @@ cc.Class({
     extends: cc.Component,
 
     properties: {
-        // foo: {
-        //    default: null,      // The default value will be used only when the component attaching
-        //                           to a node for the first time
-        //    url: cc.Texture2D,  // optional, default is typeof default
-        //    serializable: true, // optional, default is true
-        //    visible: true,      // optional, default is true
-        //    displayName: 'Foo', // optional
-        //    readonly: false,    // optional, default is false
-        // },
-        // ...
         aniPre: {
             default: [],
             type: [cc.Prefab]
@@ -54,6 +44,7 @@ cc.Class({
                 aniView.parent = this.node;
                 var cellViewScript = aniView.getComponent("CellView");
                 cellViewScript.initWithModel(cellsModels[i][j]);
+                cellViewScript.setGridViewScript(this);
                 this.cellViews[i][j] = aniView;
             }
         }
@@ -118,6 +109,7 @@ cc.Class({
                 aniView.parent = this.node;
                 var cellViewScript = aniView.getComponent("CellView");
                 cellViewScript.initWithModel(model);
+                cellViewScript.setGridViewScript(this);
                 view = aniView;
             }
             // 如果已经存在
@@ -165,7 +157,7 @@ cc.Class({
         for(var i = 1;i <=9 ;i++){
             for(var j = 1 ;j <=9 ;j ++){
                 if(this.cellViews[i][j] && this.cellViews[i][j].getComponent("CellView").model == model){
-                    return {view:this.cellViews[i][j],x:j, y:i};
+                    return {view: this.cellViews[i][j], x: j, y: i};
                 }
             }
         }
@@ -202,7 +194,7 @@ cc.Class({
         this.isInPlayAni = true;
         this.node.runAction(cc.sequence(cc.delayTime(time),cc.callFunc(function(){
             this.isInPlayAni = false;
-            //console.log("call controller function checkEndGame");
+            this.controller.checkGoalLeft();
             this.controller.checkEndGame();
             this.audioUtils.playContinuousMatch(step);
             if (!this.controller.isEndGame()) this.controller.animeEnd();
@@ -254,11 +246,10 @@ cc.Class({
             let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
             this.cellViews[row][col].runAction(blinkAction);
         }
-        console.log(`hint swap: ${this.hints[randomIndex].swapPositions}`);
+        // console.log(`hint swap: ${this.hints[randomIndex].swapPositions}`);
     },
 
-    //called every frame, uncomment this function to activate update callback
-    // update: function (dt) {
-    //     
-    // }
+    goalLeftMinus: function() {
+        this.controller.uiGoalLeftMinus();
+    }
 });

@@ -20,9 +20,16 @@ cc.Class({
     hintTimer: {
       default: null,
       type: cc.Node
+    },
+    goalLeftLabel: {
+      default: null,
+      type: cc.Node
+    },
+    goalTypeImg: {
+      default: null,
+      type: cc.Node
     }
   },
-
 
   // use this for initialization
   onLoad: function () {
@@ -30,6 +37,13 @@ cc.Class({
       // 動態查找並初始化
       this.audioSource = cc.find("Canvas/AudioSource").getComponent(cc.AudioSource);
     }
+    if (!this.goalLeftLabel) {
+      this.goalLeftLabel = cc.find("Canvas/Goal/Goal Left");
+    }
+    if (!this.goalTypeImg) {
+      this.goalTypeImg = cc.find("Canvas/Goal/Goal Type Img");
+    }
+
     let audioButton = this.node.parent.getChildByName('audioButton')
     audioButton.on('click', this.callback, this)
     this.gameModel = new GameModel();
@@ -41,9 +55,13 @@ cc.Class({
     this.audioSource = cc.find('Canvas/GameScene')._components[1].audio;
     this.hintTimerScript = this.hintTimer.getComponent("HintTimer");
     this.hintTimerScript.setGameController(this);
+    this.goalLeftLabelScript = this.goalLeftLabel.getComponent("GoalLeftView");
+    this.goalLeftLabelScript.setGameController(this);
+    this.goalTypeImgScript = this.goalTypeImg.getComponent("GoalTypeImgView");
   },
 
   start: function() {
+    this.gameModel.nextGoal();
     this.gameModel.startThinkingTimer();
     this.gridScript.setHints(this.getHints());
     this.hintTimerScript.setInterval(2);
@@ -64,7 +82,6 @@ cc.Class({
   },
 
   getGameModel() {
-    console.log("getGameModel called");
     return this.gameModel;
   },
 
@@ -77,7 +94,6 @@ cc.Class({
   },
 
   checkEndGame() {
-    //console.log("call gameModel function checkEndGame");
     this.gameModel.checkEndGame();
   },
   isEndGame() {
@@ -187,5 +203,46 @@ cc.Class({
             this.collectAllNodes(children[i], result);
         }
     }
+  },
+
+  getLogicGoalLeft() {
+    return this.gameModel.getGoalLeft();
+  },
+  setLogicGoalLeft(num) {
+    this.gameModel.setGoalLeft(num);
+  },
+  getUIGoalLeft() {
+    return this.goalLeftLabelScript.getGoalLeft();
+  },
+  setUIGoalLeft(num) {
+    this.goalLeftLabelScript.setGoalLeft(num);
+  },
+
+  uiGoalLeftMinus() {
+    this.goalLeftLabelScript.goalLeftMinus();
+  },
+
+  checkGoalLeft() {
+    console.log(`Logic Goal Left: ${this.getLogicGoalLeft()}, UI Goal Left: ${this.getUIGoalLeft()}`);
+    if (this.getLogicGoalLeft() !== this.getUIGoalLeft()) {
+      console.error("邏輯和UI的goalLeft不一致，自動校正");
+      this.setUIGoalLeft(this.getLogicGoalLeft());
+    }
+
+    if (this.gameModel.getGoalLeft() === 0) {
+      this.gameModel.nextGoal();
+    }
+  },
+
+  goalComplete() {
+    this.gameModel.drawGoalCompleteCoins();
+  },
+
+  setGoalTypeImg(goalType, cellType) {
+    this.goalTypeImgScript.changeSprite(goalType, cellType);
+  },
+
+  startThinkingTimer() {
+    this.gameModel.startThinkingTimer();
   }
 });
