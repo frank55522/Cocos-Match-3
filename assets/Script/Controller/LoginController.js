@@ -1,5 +1,6 @@
 import AudioUtils from "../Utils/AudioUtils";
 const GlobalData = require("../Utils/GlobalData");
+const Toast = require("../Utils/Toast");
 
 cc.Class({
   extends: cc.Component,
@@ -30,25 +31,65 @@ cc.Class({
   onLoad() {
     this.gameSceneBGMAudioId = cc.audioEngine.play(this.worldSceneBGM, true, 1);
     
-    // 載入儲存的玩家資料
-    this.loadPlayerData();
-    
     // 設置登錄按鈕事件
     if (this.loginButton) {
       this.loginButton.node.on('click', this.onStartGame, this);
     }
+    
+    // 設置排行榜按鈕事件
+    if (this.LeaderboardButton) {
+      this.LeaderboardButton.node.on('click', this.onLeaderboardButtonClick, this);
+      // 初始状态下禁用排行榜按钮，直到玩家输入ID
+      this.LeaderboardButton.interactable = false;
+    }
+    
+    // 添加輸入框更改事件
+    if (this.playerIdInput) {
+      this.playerIdInput.node.on('text-changed', this.onPlayerIdChanged, this);
+      // 確保輸入框初始為空
+      this.playerIdInput.string = "";
+    }
   },
   
-  loadPlayerData() {
-    if (!this.playerIdInput) return;
-    
-    // 嘗試載入之前的玩家ID
-    let savedPlayerId = cc.sys.localStorage.getItem('playerId');
-    console.log("嘗試載入之前保存的玩家 ID:", savedPlayerId);
-    
-    if (savedPlayerId) {
-      this.playerIdInput.string = savedPlayerId;
+  onPlayerIdChanged(editbox) {
+    // 當輸入框內容改變時，檢查內容是否為空
+    // 如果不為空，啟用排行榜按鈕；否則禁用
+    if (this.LeaderboardButton) {
+      this.LeaderboardButton.interactable = (editbox.string.trim().length > 0);
     }
+  },
+  
+  onLeaderboardButtonClick() {
+    // 確保玩家有輸入ID
+    if (!this.playerIdInput || this.playerIdInput.string.trim() === "") {
+      Toast("請先輸入玩家ID", { duration: 2, gravity: "CENTER" });
+      return;
+    }
+    
+    let playerId = this.playerIdInput.string.trim();
+    
+    // 設置全局數據中的玩家ID
+    GlobalData.setPlayerId(playerId);
+    
+    // 初始化並顯示排行榜
+    this.showLoginLeaderboard();
+  },
+  
+  showLoginLeaderboard() {
+    // 檢查場景中是否已有排行榜管理器
+    let leaderboardNode = cc.director.getScene().getChildByName('LeaderboardManager');
+    let leaderboardManager;
+    
+    if (!leaderboardNode) {
+      leaderboardNode = new cc.Node('LeaderboardManager');
+      leaderboardNode.parent = cc.director.getScene();
+      leaderboardManager = leaderboardNode.addComponent('LeaderboardManager');
+    } else {
+      leaderboardManager = leaderboardNode.getComponent('LeaderboardManager');
+    }
+    
+    // 顯示排行榜，但傳入特殊參數，表示這是從登入畫面呼叫的
+    leaderboardManager.showLoginLeaderboard();
   },
   
   onStartGame() {

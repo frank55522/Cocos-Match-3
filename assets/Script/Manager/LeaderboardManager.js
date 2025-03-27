@@ -86,7 +86,7 @@ cc.Class({
     
     // 獲取排行榜數據
     getLeaderboard(callback, forceRefresh = false) {
-        if (this.isLoading) {
+        if (this.isLoading && !forceRefresh) {
             if (callback) callback(new Error("正在獲取排行榜數據中"), this.localLeaderboardData);
             return;
         }
@@ -455,113 +455,114 @@ cc.Class({
 
     // 顯示排行榜界面
     showLeaderboard(skipLoadingToast = false) {
-      let canvas = cc.director.getScene().getComponentInChildren(cc.Canvas);
-      let self = this;
-      
-      // 檢查是否已經有排行榜面板在顯示
-      let existingLeaderboard = canvas.node.getChildByName("LeaderboardPanel");
-      if (existingLeaderboard) {
-          console.log("排行榜已經在顯示中，避免重複創建");
-          return;
-      }
-      
-      // 獲取當前玩家ID
-      let currentPlayerId = GlobalData.getPlayerId();
-      if (!currentPlayerId) {
-          currentPlayerId = cc.sys.localStorage.getItem('playerId') || "";
-      }
-      this.currentPlayerId = currentPlayerId;
-      
-      // 建立遮罩背景
-      let maskNode = new cc.Node("LeaderboardMask");
-      let maskSprite = maskNode.addComponent(cc.Sprite);
-      maskSprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
-      maskNode.width = canvas.node.width;
-      maskNode.height = canvas.node.height;
-      maskNode.color = cc.color(0, 0, 0);
-      maskNode.opacity = 150; // 半透明
-      maskNode.parent = canvas.node;
-      
-      // 建立排行榜面板
-      let leaderboardNode = new cc.Node("LeaderboardPanel");
-      leaderboardNode.width = 600;
-      leaderboardNode.height = 700;
-      
-      // 使用繪圖元件來畫一個白色矩形
-      let graphics = leaderboardNode.addComponent(cc.Graphics);
-      graphics.fillColor = cc.color(255, 255, 255, 255);
-      graphics.rect(-300, -350, 600, 700);
-      graphics.fill();
-      
-      // 先將節點添加到畫布，但設置為不可見
-      leaderboardNode.parent = canvas.node;
-      
-      // 添加排行榜標題
-      let titleNode = new cc.Node("Title");
-      let titleLabel = titleNode.addComponent(cc.Label);
-      titleLabel.string = "排行榜";
-      titleLabel.fontSize = 40;
-      titleLabel.lineHeight = 40;
-      titleNode.color = cc.color(0, 0, 0);
-      titleNode.position = cc.v2(0, 300);
-      titleNode.parent = leaderboardNode;
-      
-      // 添加連接狀態提示
-      let statusNode = new cc.Node("Status");
-      let statusLabel = statusNode.addComponent(cc.Label);
-      statusLabel.string = this.isOfflineMode ? "離線模式，顯示本地排行榜" : "已連接到線上排行榜服務";
-      statusLabel.fontSize = 16;
-      statusLabel.lineHeight = 16;
-      statusNode.color = this.isOfflineMode ? cc.color(255, 0, 0) : cc.color(0, 128, 0);
-      statusNode.position = cc.v2(0, 260);
-      statusNode.parent = leaderboardNode;
-      
-      // 添加載入中提示
-      let loadingNode = new cc.Node("Loading");
-      let loadingLabel = loadingNode.addComponent(cc.Label);
-      loadingLabel.string = "載入中...";
-      loadingLabel.fontSize = 24;
-      loadingNode.position = cc.v2(0, 0);
-      loadingNode.parent = leaderboardNode;
-      
-      // 建立加載提示，但只有在不跳過提示時才顯示
-      if (!skipLoadingToast) {
-          Toast("正在上傳成績並獲取最新排行資料...", { duration: 2, gravity: "CENTER" });
-      }
-      
-      // 獲取排行榜數據
-      this.getLeaderboard(function(err, data) {
-          // 移除載入中提示
-          loadingNode.destroy();
-          
-          if (err) {
-              console.error("獲取排行榜失敗：", err);
-              if (!skipLoadingToast) {
-                  Toast("無法獲取線上排行，顯示本地排行榜!", { duration: 2, gravity: "CENTER" });
-              }
-              
-              // 使用本地數據
-              data = self.localLeaderboardData;
-              statusLabel.string = "離線模式，顯示本地排行榜";
-              statusNode.color = cc.color(255, 0, 0);
-          } else {
-              if (!skipLoadingToast) {
-                  Toast("已獲取最新排行資料!", { duration: 2, gravity: "CENTER" });
-              }
-          }
-          
-          // 先準備好所有UI元素，但不添加到場景中
-          let contentNode = new cc.Node("LeaderboardContent");
-          
-          // 顯示排行榜數據
-          self.renderLeaderboard(contentNode, data, currentPlayerId);
-          
-          // 添加返回主頁按鈕
-          self.addBackButton(contentNode, maskNode);
-          
-          // 一次性添加到排行榜面板，避免多次重繪
-          contentNode.parent = leaderboardNode;
-      }, true);
+        let canvas = cc.director.getScene().getComponentInChildren(cc.Canvas);
+        let self = this;
+        
+        // 檢查是否已經有排行榜面板在顯示
+        let existingLeaderboard = canvas.node.getChildByName("LeaderboardPanel");
+        if (existingLeaderboard) {
+            console.log("排行榜已經在顯示中，避免重複創建");
+            return;
+        }
+        
+        // 獲取當前玩家ID
+        let currentPlayerId = GlobalData.getPlayerId();
+        if (!currentPlayerId) {
+            currentPlayerId = cc.sys.localStorage.getItem('playerId') || "";
+        }
+        this.currentPlayerId = currentPlayerId;
+        
+        // 建立遮罩背景
+        let maskNode = new cc.Node("LeaderboardMask");
+        let maskSprite = maskNode.addComponent(cc.Sprite);
+        maskSprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
+        maskNode.width = canvas.node.width;
+        maskNode.height = canvas.node.height;
+        maskNode.color = cc.color(0, 0, 0);
+        maskNode.opacity = 150; // 半透明
+        maskNode.parent = canvas.node;
+        
+        // 建立排行榜面板
+        let leaderboardNode = new cc.Node("LeaderboardPanel");
+        leaderboardNode.width = 600;
+        leaderboardNode.height = 700;
+        
+        // 使用繪圖元件來畫一個白色矩形
+        let graphics = leaderboardNode.addComponent(cc.Graphics);
+        graphics.fillColor = cc.color(255, 255, 255, 255);
+        graphics.rect(-300, -350, 600, 700);
+        graphics.fill();
+        
+        // 先將節點添加到畫布，但設置為不可見
+        leaderboardNode.parent = canvas.node;
+        
+        // 添加排行榜標題
+        let titleNode = new cc.Node("Title");
+        let titleLabel = titleNode.addComponent(cc.Label);
+        titleLabel.string = "排行榜";
+        titleLabel.fontSize = 40;
+        titleLabel.lineHeight = 40;
+        titleNode.color = cc.color(0, 0, 0);
+        titleNode.position = cc.v2(0, 300);
+        titleNode.parent = leaderboardNode;
+        
+        // 添加連接狀態提示
+        let statusNode = new cc.Node("Status");
+        let statusLabel = statusNode.addComponent(cc.Label);
+        statusLabel.string = this.isOfflineMode ? "離線模式，顯示本地排行榜" : "已連接到線上排行榜服務";
+        statusLabel.fontSize = 16;
+        statusLabel.lineHeight = 16;
+        statusNode.color = this.isOfflineMode ? cc.color(255, 0, 0) : cc.color(0, 128, 0);
+        statusNode.position = cc.v2(0, 260);
+        statusNode.parent = leaderboardNode;
+        
+        // 添加載入中提示
+        let loadingNode = new cc.Node("Loading");
+        let loadingLabel = loadingNode.addComponent(cc.Label);
+        loadingLabel.string = "載入中...";
+        loadingLabel.fontSize = 24;
+        loadingNode.position = cc.v2(0, 0);
+        loadingNode.parent = leaderboardNode;
+        
+        // 建立加載提示，但只有在不跳過提示時才顯示
+        if (!skipLoadingToast) {
+            Toast("正在上傳成績並獲取最新排行資料...", { duration: 2, gravity: "CENTER" });
+        }
+        
+        // 獲取排行榜數據
+        this.getLeaderboard(function(err, data) {
+            // 移除載入中提示
+            loadingNode.destroy();
+            
+            if (err) {
+                console.error("獲取排行榜失敗：", err);
+                if (!skipLoadingToast) {
+                    Toast("無法獲取線上排行，顯示本地排行榜!", { duration: 2, gravity: "CENTER" });
+                }
+                
+                // 使用本地數據
+                data = self.localLeaderboardData;
+                statusLabel.string = "離線模式，顯示本地排行榜";
+                statusNode.color = cc.color(255, 0, 0);
+            } else {
+                if (!skipLoadingToast) {
+                    Toast("已獲取最新排行資料!", { duration: 2, gravity: "CENTER" });
+                }
+            }
+            
+            // 先準備好所有UI元素，但不添加到場景中
+            let contentNode = new cc.Node("LeaderboardContent");
+            
+            // 顯示排行榜數據
+            self.renderLeaderboard(contentNode, data, currentPlayerId);
+            
+            // 分別添加返回主頁按鈕和刷新按鈕
+            self.addBackButton(contentNode, maskNode);
+            self.addRefreshButton(contentNode, maskNode);
+            
+            // 一次性添加到排行榜面板，避免多次重繪
+            contentNode.parent = leaderboardNode;
+        }, true);
     },
 
     // 渲染排行榜數據
@@ -754,51 +755,150 @@ cc.Class({
       }
     },
 
-    // 添加返回主頁按鈕
+    // 返回主頁按鈕
     addBackButton(contentNode, maskNode) {
-      // 創建返回按鈕
-      let backButton = new cc.Node("BackButton");
-      backButton.width = 220;
-      backButton.height = 60;
-      backButton.position = cc.v2(0, -320);
-      backButton.parent = contentNode;
-      
-      // 使用 Graphics 繪製按鈕背景
-      let buttonGraphics = backButton.addComponent(cc.Graphics);
-      buttonGraphics.fillColor = cc.color(51, 122, 183, 255);
-      
-      // 確保矩形大小與按鈕節點大小一致
-      buttonGraphics.rect(-110, -30, 220, 60);
-      buttonGraphics.fill();
-      
-      // 添加標籤
-      let buttonLabel = new cc.Node("Label");
-      let label = buttonLabel.addComponent(cc.Label);
-      label.string = "返回主頁";
-      label.fontSize = 30;
-      label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;  // 水平居中
-      label.verticalAlign = cc.Label.VerticalAlign.CENTER;      // 垂直居中
-      
-      // 調整標籤位置，使其在按鈕中間偏下一點
-      buttonLabel.position = cc.v2(0, -2);
-      
-      buttonLabel.color = cc.color(255, 255, 255);
-      buttonLabel.parent = backButton;
-      
-      // 添加點擊事件
-      backButton.on(cc.Node.EventType.TOUCH_END, () => {
-          console.log("返回主頁");
-          
-          // 禁用按鈕防止多次點擊
-          backButton.off(cc.Node.EventType.TOUCH_END);
-          
-          let leaderboardPanel = backButton.parent.parent; // contentNode的父節點，即leaderboardNode
-          leaderboardPanel.destroy();
-          maskNode.destroy();
-          this.loadLoginScene();
-      });
+        // 創建返回按鈕 (左側按鈕)
+        let backButton = new cc.Node("BackButton");
+        backButton.width = 220;
+        backButton.height = 60;
+        backButton.position = cc.v2(-120, -320); // 修改位置，向左偏移
+        backButton.parent = contentNode;
+        
+        // 使用 Graphics 繪製按鈕背景
+        let buttonGraphics = backButton.addComponent(cc.Graphics);
+        buttonGraphics.fillColor = cc.color(51, 122, 183, 255);
+        
+        // 確保矩形大小與按鈕節點大小一致
+        buttonGraphics.rect(-110, -30, 220, 60);
+        buttonGraphics.fill();
+        
+        // 添加標籤
+        let buttonLabel = new cc.Node("Label");
+        let label = buttonLabel.addComponent(cc.Label);
+        label.string = "返回主頁";
+        label.fontSize = 30;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;  // 水平居中
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;      // 垂直居中
+        
+        // 調整標籤位置，使其在按鈕中間偏下一點
+        buttonLabel.position = cc.v2(0, -2);
+        
+        buttonLabel.color = cc.color(255, 255, 255);
+        buttonLabel.parent = backButton;
+        
+        // 添加點擊事件
+        backButton.on(cc.Node.EventType.TOUCH_END, () => {
+            console.log("返回主頁");
+            
+            // 禁用按鈕防止多次點擊
+            backButton.off(cc.Node.EventType.TOUCH_END);
+            
+            let leaderboardPanel = backButton.parent.parent; // contentNode的父節點，即leaderboardNode
+            leaderboardPanel.destroy();
+            maskNode.destroy();
+            this.loadLoginScene();
+        });
     },
-    
+
+    // 刷新排行榜按鈕
+    addRefreshButton(contentNode, maskNode) {
+        // 創建刷新按鈕 (右側按鈕)
+        let refreshButton = new cc.Node("RefreshButton");
+        refreshButton.width = 220;
+        refreshButton.height = 60;
+        refreshButton.position = cc.v2(120, -320); // 向右偏移
+        refreshButton.parent = contentNode;
+        
+        // 添加按鈕組件
+        let buttonComp = refreshButton.addComponent(cc.Button);
+        
+        // 使用 Graphics 繪製按鈕背景
+        let buttonGraphics = refreshButton.addComponent(cc.Graphics);
+        buttonGraphics.fillColor = cc.color(46, 204, 113, 255); // 使用綠色以區分
+        
+        // 確保矩形大小與按鈕節點大小一致
+        buttonGraphics.rect(-110, -30, 220, 60);
+        buttonGraphics.fill();
+        
+        // 添加標籤
+        let buttonLabel = new cc.Node("Label");
+        let label = buttonLabel.addComponent(cc.Label);
+        label.string = "刷新排行榜";
+        label.fontSize = 30;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;  // 水平居中
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;      // 垂直居中
+        
+        // 調整標籤位置，使其在按鈕中間偏下一點
+        buttonLabel.position = cc.v2(0, -2);
+        
+        buttonLabel.color = cc.color(255, 255, 255);
+        buttonLabel.parent = refreshButton;
+        
+        // 添加點擊事件
+        refreshButton.on(cc.Node.EventType.TOUCH_END, () => {
+            // 臨時禁用按鈕防止連續多次點擊
+            refreshButton.getComponent(cc.Button) || refreshButton.addComponent(cc.Button);
+            let refreshBtnComp = refreshButton.getComponent(cc.Button);
+            refreshBtnComp.interactable = false;
+            
+            console.log("刷新排行榜");
+            
+            // 顯示加載中提示
+            const Toast = require('../Utils/Toast');
+            Toast("正在刷新排行榜資料...", { duration: 2, gravity: "CENTER" });
+            
+            // 獲取當前顯示的排行榜面板
+            let leaderboardPanel = refreshButton.parent.parent;
+            
+            // 獲取當前內容容器
+            let contentContainer = refreshButton.parent;
+            
+            // 取得當前玩家ID
+            let currentPlayerId = this.currentPlayerId;
+            
+            // 重新獲取排行榜數據
+            this.getLeaderboard((err, data) => {
+                // 重新啟用按鈕
+                if (refreshBtnComp) {
+                    refreshBtnComp.interactable = true;
+                }
+                
+                if (err) {
+                    Toast("無法獲取最新排行榜資料，顯示本地資料", { duration: 2, gravity: "CENTER" });
+                    data = this.localLeaderboardData;
+                } else {
+                    Toast("已獲取最新排行榜資料！", { duration: 2, gravity: "CENTER" });
+                }
+                
+                // 找到並更新狀態顯示
+                let statusNode = leaderboardPanel.getChildByName("Status");
+                if (statusNode) {
+                    let statusLabel = statusNode.getComponent(cc.Label);
+                    statusLabel.string = this.isOfflineMode ? "離線模式，顯示本地排行榜" : "已連接到線上排行榜服務";
+                    statusNode.color = this.isOfflineMode ? cc.color(255, 0, 0) : cc.color(0, 128, 0);
+                }
+                
+                // 創建新的內容容器
+                let newContentNode = new cc.Node("LeaderboardContent");
+                
+                // 重新渲染排行榜
+                this.renderLeaderboard(newContentNode, data, currentPlayerId);
+                
+                // 分別添加返回主頁按鈕和刷新按鈕
+                this.addBackButton(newContentNode, maskNode);
+                this.addRefreshButton(newContentNode, maskNode);
+                
+                // 一次性將新內容添加到面板
+                newContentNode.parent = leaderboardPanel;
+                
+                // 移除舊內容（確保在新內容添加後再移除）
+                if (contentContainer && contentContainer !== newContentNode) {
+                    contentContainer.destroy();
+                }
+            }, true); // 強制刷新
+        });
+    },
+        
     // 載入登入場景
     loadLoginScene() {
         try {
@@ -864,6 +964,424 @@ cc.Class({
         if (children && children.length > 0) {
             for (let i = 0; i < children.length; i++) {
                 this.collectAllNodes(children[i], result);
+            }
+        }
+    },
+
+    // 專門處理登入畫面的排行榜顯示
+    showLoginLeaderboard() {
+        let canvas = cc.director.getScene().getComponentInChildren(cc.Canvas);
+        let self = this;
+        
+        // 檢查是否已經有排行榜面板在顯示
+        let existingLeaderboard = canvas.node.getChildByName("LeaderboardPanel");
+        if (existingLeaderboard) {
+            console.log("排行榜已經在顯示中，避免重複創建");
+            return;
+        }
+        
+        // 獲取當前玩家ID
+        let currentPlayerId = GlobalData.getPlayerId();
+        if (!currentPlayerId) {
+            currentPlayerId = cc.sys.localStorage.getItem('playerId') || "";
+        }
+        this.currentPlayerId = currentPlayerId;
+
+        // 隱藏輸入欄位
+        let playerInputField = canvas.node.getChildByName("playerIdInput");
+        if (playerInputField) {
+            if (!playerInputField._originalActive) {
+                playerInputField._originalActive = playerInputField.active;
+            }
+            playerInputField.active = false;
+        }
+        
+        // 禁用登入和排行榜按鈕
+        this._disableLoginButtons(canvas.node);
+        
+        // 建立遮罩背景
+        let maskNode = new cc.Node("LeaderboardMask");
+        let maskSprite = maskNode.addComponent(cc.Sprite);
+        maskSprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
+        maskNode.width = canvas.node.width;
+        maskNode.height = canvas.node.height;
+        maskNode.color = cc.color(0, 0, 0);
+        maskNode.opacity = 150; // 半透明
+        maskNode.parent = canvas.node;
+        
+        // 建立排行榜面板
+        let leaderboardNode = new cc.Node("LeaderboardPanel");
+        leaderboardNode.width = 600;
+        leaderboardNode.height = 700;
+        
+        // 使用繪圖元件來畫一個白色矩形
+        let graphics = leaderboardNode.addComponent(cc.Graphics);
+        graphics.fillColor = cc.color(255, 255, 255, 255);
+        graphics.rect(-300, -350, 600, 700);
+        graphics.fill();
+        
+        // 先將節點添加到畫布，但設置為不可見
+        leaderboardNode.parent = canvas.node;
+        
+        // 添加排行榜標題
+        let titleNode = new cc.Node("Title");
+        let titleLabel = titleNode.addComponent(cc.Label);
+        titleLabel.string = "排行榜";
+        titleLabel.fontSize = 40;
+        titleLabel.lineHeight = 40;
+        titleNode.color = cc.color(0, 0, 0);
+        titleNode.position = cc.v2(0, 300);
+        titleNode.parent = leaderboardNode;
+        
+        // 添加連接狀態提示
+        let statusNode = new cc.Node("Status");
+        let statusLabel = statusNode.addComponent(cc.Label);
+        statusLabel.string = this.isOfflineMode ? "離線模式，顯示本地排行榜" : "已連接到線上排行榜服務";
+        statusLabel.fontSize = 16;
+        statusLabel.lineHeight = 16;
+        statusNode.color = this.isOfflineMode ? cc.color(255, 0, 0) : cc.color(0, 128, 0);
+        statusNode.position = cc.v2(0, 260);
+        statusNode.parent = leaderboardNode;
+        
+        // 添加載入中提示
+        let loadingNode = new cc.Node("Loading");
+        let loadingLabel = loadingNode.addComponent(cc.Label);
+        loadingLabel.string = "載入中...";
+        loadingLabel.fontSize = 24;
+        loadingNode.position = cc.v2(0, 0);
+        loadingNode.parent = leaderboardNode;
+        
+        // 建立加載提示
+        Toast("正在獲取排行榜資料...", { duration: 2, gravity: "CENTER" });
+        
+        // 獲取排行榜數據
+        this.getLeaderboard(function(err, data) {
+            // 移除載入中提示
+            loadingNode.destroy();
+            
+            if (err) {
+                console.error("獲取排行榜失敗：", err);
+                Toast("無法獲取線上排行，顯示本地排行榜!", { duration: 2, gravity: "CENTER" });
+                
+                // 使用本地數據
+                data = self.localLeaderboardData;
+                statusLabel.string = "離線模式，顯示本地排行榜";
+                statusNode.color = cc.color(255, 0, 0);
+            } else {
+                Toast("已獲取最新排行資料!", { duration: 2, gravity: "CENTER" });
+            }
+            
+            // 先準備好所有UI元素，但不添加到場景中
+            let contentNode = new cc.Node("LeaderboardContent");
+            
+            // 顯示排行榜數據（登入用的特殊版本）
+            self.renderLoginLeaderboard(contentNode, data, currentPlayerId);
+            
+            // 添加關閉按鈕
+            self.addCloseButton(contentNode, maskNode);
+            
+            // 一次性添加到排行榜面板，避免多次重繪
+            contentNode.parent = leaderboardNode;
+        }, true);
+    },
+
+    // 渲染登入畫面的排行榜數據
+    renderLoginLeaderboard(contentNode, data, currentPlayerId) {
+        // 確保數據有效
+        if (!data || !Array.isArray(data)) {
+            data = [];
+        }
+        
+        // 查找當前玩家的排名和分數
+        let currentPlayerRank = -1;
+        let currentPlayerData = null;
+        
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].playerId === currentPlayerId) {
+                currentPlayerRank = i + 1;
+                currentPlayerData = data[i];
+                break;
+            }
+        }
+        
+        // 如果當前玩家不在排行榜中，則創建臨時數據，顯示為N/A
+        if (currentPlayerRank === -1 && currentPlayerId) {
+            currentPlayerData = {
+                playerId: currentPlayerId,
+                score: "N/A", // 新玩家顯示N/A
+                date: new Date().toISOString()
+            };
+        }
+        
+        // 顯示前十名
+        let displayCount = Math.min(10, data.length);
+        
+        // 建立排行榜表頭 - 增加字體大小
+        let headerNode = new cc.Node("Header");
+        headerNode.position = cc.v2(0, 230);
+        headerNode.parent = contentNode;
+        
+        // 排名表頭
+        let rankHeaderNode = new cc.Node("RankHeader");
+        let rankHeaderLabel = rankHeaderNode.addComponent(cc.Label);
+        rankHeaderLabel.string = "排名";
+        rankHeaderLabel.fontSize = 30;
+        rankHeaderNode.color = cc.color(100, 100, 100);
+        rankHeaderNode.position = cc.v2(-200, 0);
+        rankHeaderNode.parent = headerNode;
+        
+        // 玩家ID表頭
+        let idHeaderNode = new cc.Node("IDHeader");
+        let idHeaderLabel = idHeaderNode.addComponent(cc.Label);
+        idHeaderLabel.string = "玩家ID";
+        idHeaderLabel.fontSize = 30;
+        idHeaderNode.color = cc.color(100, 100, 100);
+        idHeaderNode.position = cc.v2(0, 0);
+        idHeaderNode.parent = headerNode;
+        
+        // 分數表頭
+        let scoreHeaderNode = new cc.Node("ScoreHeader");
+        let scoreHeaderLabel = scoreHeaderNode.addComponent(cc.Label);
+        scoreHeaderLabel.string = "分數";
+        scoreHeaderLabel.fontSize = 30;
+        scoreHeaderNode.color = cc.color(100, 100, 100);
+        scoreHeaderNode.position = cc.v2(200, 0);
+        scoreHeaderNode.parent = headerNode;
+        
+        // 分隔線
+        let lineNode = new cc.Node("Line");
+        let lineGraphics = lineNode.addComponent(cc.Graphics);
+        lineGraphics.strokeColor = cc.color(200, 200, 200);
+        lineGraphics.lineWidth = 2;
+        lineGraphics.moveTo(-275, 0);
+        lineGraphics.lineTo(275, 0);
+        lineGraphics.stroke();
+        lineNode.position = cc.v2(0, 210);
+        lineNode.parent = contentNode;
+        
+        // 創建排行榜項目
+        for (let i = 0; i < displayCount; i++) {
+            let entry = data[i];
+            
+            let entryNode = new cc.Node(`Entry_${i}`);
+            entryNode.position = cc.v2(0, 180 - i * 45);
+            entryNode.parent = contentNode;
+            
+            // 如果是當前玩家，先增加高亮背景
+            if (entry.playerId === currentPlayerId) {
+                let highlightNode = new cc.Node("Highlight");
+                let highlightGraphics = highlightNode.addComponent(cc.Graphics);
+                highlightGraphics.fillColor = cc.color(135, 206, 250, 100);
+                highlightGraphics.rect(-275, -22, 550, 44);
+                highlightGraphics.fill();
+                highlightNode.parent = entryNode;
+                highlightNode.setSiblingIndex(0);
+            }
+            
+            // 排名
+            let rankNode = new cc.Node("Rank");
+            let rankLabel = rankNode.addComponent(cc.Label);
+            rankLabel.string = (i + 1).toString();
+            rankLabel.fontSize = 28;
+            rankNode.color = cc.color(0, 0, 0);
+            rankNode.position = cc.v2(-200, 0);
+            rankNode.parent = entryNode;
+            
+            // 玩家ID
+            let idNode = new cc.Node("ID");
+            let idLabel = idNode.addComponent(cc.Label);
+            idLabel.string = entry.playerId || "未知玩家";
+            idLabel.fontSize = 28;
+            idNode.color = cc.color(0, 0, 0);
+            idNode.position = cc.v2(0, 0);
+            idNode.parent = entryNode;
+            
+            // 分數
+            let scoreNode = new cc.Node("Score");
+            let scoreLabel = scoreNode.addComponent(cc.Label);
+            scoreLabel.string = entry.score.toString();
+            scoreLabel.fontSize = 28;
+            scoreNode.color = cc.color(0, 0, 0);
+            scoreNode.position = cc.v2(200, 0);
+            scoreNode.parent = entryNode;
+        }
+        
+        // 如果當前玩家不在前十名或不在排行榜中，單獨顯示
+        if ((currentPlayerRank > 10 || currentPlayerRank === -1) && currentPlayerData) {
+            // 添加一條分隔線
+            let separatorNode = new cc.Node("Separator");
+            let separatorGraphics = separatorNode.addComponent(cc.Graphics);
+            separatorGraphics.strokeColor = cc.color(200, 200, 200);
+            separatorGraphics.lineWidth = 2;
+            separatorGraphics.moveTo(-275, 0);
+            separatorGraphics.lineTo(275, 0);
+            separatorGraphics.stroke();
+            
+            // 計算分隔線位置
+            let itemCount = Math.min(10, displayCount);
+            let separatorY = 180 - (itemCount * 45) + 33.75;
+            separatorNode.position = cc.v2(0, separatorY);
+            separatorNode.parent = contentNode;
+            
+            // 創建當前玩家項目
+            let playerEntryNode = new cc.Node("CurrentPlayerEntry");
+            // 將當前玩家的位置設為分隔線下方一個項目高度處
+            let playerEntryY = separatorY - 33.75;
+            playerEntryNode.position = cc.v2(0, playerEntryY);
+            playerEntryNode.parent = contentNode;
+            
+            // 先設置高亮背景
+            let highlightNode = new cc.Node("Highlight");
+            let highlightGraphics = highlightNode.addComponent(cc.Graphics);
+            highlightGraphics.fillColor = cc.color(135, 206, 250, 100);
+            highlightGraphics.rect(-275, -22, 550, 44);
+            highlightGraphics.fill();
+            highlightNode.parent = playerEntryNode;
+            highlightNode.setSiblingIndex(0);
+            
+            // 排名
+            let rankNode = new cc.Node("Rank");
+            let rankLabel = rankNode.addComponent(cc.Label);
+            rankLabel.string = currentPlayerRank > 0 ? currentPlayerRank.toString() : "N/A";
+            rankLabel.fontSize = 28;
+            rankNode.color = cc.color(0, 0, 0);
+            rankNode.position = cc.v2(-200, 0);
+            rankNode.parent = playerEntryNode;
+            
+            // 玩家ID
+            let idNode = new cc.Node("ID");
+            let idLabel = idNode.addComponent(cc.Label);
+            idLabel.string = currentPlayerData.playerId;
+            idLabel.fontSize = 28;
+            idNode.color = cc.color(0, 0, 0);
+            idNode.position = cc.v2(0, 0);
+            idNode.parent = playerEntryNode;
+            
+            // 分數
+            let scoreNode = new cc.Node("Score");
+            let scoreLabel = scoreNode.addComponent(cc.Label);
+            scoreLabel.string = currentPlayerData.score.toString();
+            scoreLabel.fontSize = 28;
+            scoreNode.color = cc.color(0, 0, 0);
+            scoreNode.position = cc.v2(200, 0);
+            scoreNode.parent = playerEntryNode;
+        }
+    },
+
+    // 添加關閉按鈕
+    addCloseButton(contentNode, maskNode) {
+        // 創建關閉按鈕
+        let closeButton = new cc.Node("CloseButton");
+        closeButton.width = 220;
+        closeButton.height = 60;
+        closeButton.position = cc.v2(0, -320);
+        closeButton.parent = contentNode;
+        
+        // 使用 Graphics 繪製按鈕背景
+        let buttonGraphics = closeButton.addComponent(cc.Graphics);
+        buttonGraphics.fillColor = cc.color(220, 20, 60, 255); // 紅色按鈕
+        
+        // 確保矩形大小與按鈕節點大小一致
+        buttonGraphics.rect(-110, -30, 220, 60);
+        buttonGraphics.fill();
+        
+        // 添加標籤
+        let buttonLabel = new cc.Node("Label");
+        let label = buttonLabel.addComponent(cc.Label);
+        label.string = "關閉";
+        label.fontSize = 30;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        
+        // 調整標籤位置
+        buttonLabel.position = cc.v2(0, -2);
+        
+        buttonLabel.color = cc.color(255, 255, 255);
+        buttonLabel.parent = closeButton;
+        
+        // 添加點擊事件
+        closeButton.on(cc.Node.EventType.TOUCH_END, () => {
+            console.log("關閉排行榜");
+            
+            // 禁用按鈕防止多次點擊
+            closeButton.off(cc.Node.EventType.TOUCH_END);
+            
+            // 恢復輸入欄位顯示
+            let canvas = cc.director.getScene().getComponentInChildren(cc.Canvas);
+            let playerInputField = canvas.node.getChildByName("playerIdInput");
+            if (playerInputField && playerInputField._originalActive !== undefined) {
+                playerInputField.active = playerInputField._originalActive;
+            }
+            
+            // 恢復登入和排行榜按鈕
+            this._restoreLoginButtons(canvas.node);
+            
+            let leaderboardPanel = closeButton.parent.parent;
+            leaderboardPanel.destroy();
+            maskNode.destroy();
+        });
+    },
+
+    // 禁用按鈕
+    _disableLoginButtons(canvasNode) {
+        // 找到登入按鈕和排行榜按鈕
+        let loginButton = canvasNode.getChildByName('loginButton');
+        let leaderboardButton = canvasNode.getChildByName('LeaderboardButton');
+        
+        // 保存按鈕原始狀態並禁用
+        if (loginButton) {
+            let buttonComp = loginButton.getComponent(cc.Button);
+            if (buttonComp) {
+                loginButton._originalInteractable = buttonComp.interactable;
+                buttonComp.interactable = false;
+                
+                // 也可以選擇降低透明度表示禁用狀態
+                loginButton._originalOpacity = loginButton.opacity;
+                loginButton.opacity = 120;
+            }
+        }
+        
+        if (leaderboardButton) {
+            let buttonComp = leaderboardButton.getComponent(cc.Button);
+            if (buttonComp) {
+                leaderboardButton._originalInteractable = buttonComp.interactable;
+                buttonComp.interactable = false;
+                
+                // 降低透明度
+                leaderboardButton._originalOpacity = leaderboardButton.opacity;
+                leaderboardButton.opacity = 120;
+            }
+        }
+    },
+
+    // 恢復按鈕
+    _restoreLoginButtons(canvasNode) {
+        // 找到登入按鈕和排行榜按鈕
+        let loginButton = canvasNode.getChildByName('loginButton');
+        let leaderboardButton = canvasNode.getChildByName('LeaderboardButton');
+        
+        // 恢復按鈕原始狀態
+        if (loginButton) {
+            let buttonComp = loginButton.getComponent(cc.Button);
+            if (buttonComp && loginButton._originalInteractable !== undefined) {
+                buttonComp.interactable = loginButton._originalInteractable;
+                
+                // 恢復透明度
+                if (loginButton._originalOpacity !== undefined) {
+                    loginButton.opacity = loginButton._originalOpacity;
+                }
+            }
+        }
+        
+        if (leaderboardButton) {
+            let buttonComp = leaderboardButton.getComponent(cc.Button);
+            if (buttonComp && leaderboardButton._originalInteractable !== undefined) {
+                buttonComp.interactable = leaderboardButton._originalInteractable;
+                
+                // 恢復透明度
+                if (leaderboardButton._originalOpacity !== undefined) {
+                    leaderboardButton.opacity = leaderboardButton._originalOpacity;
+                }
             }
         }
     }
