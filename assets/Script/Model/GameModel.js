@@ -11,18 +11,15 @@ export default class GameModel {
     this.cells = null;
     this.cellBgs = null;
     this.lastPos = cc.v2(-1, -1);
-    this.cellTypeNum = 5;
+    this.cellTypeNum = 4;
     this.cellCreateType = [];                             // 升成种类只在这个数组里面查找
-    this.movesLeft = 100;
+    this.movesLeft = 20;
     this.isGameOver = false;
     this.goalLeft = 99999;
     this.goalCompleteCoins = 0;
     this.goalModel = new GoalModel();
     this.totalCrushed = 0;                                // 記錄一輪要消除的數量
     this.coin = 0;
-    this.thinkingTimeLimit = 10;                          // 玩家思考時間
-    this.currentThinkingTime = this.thinkingTimeLimit;
-    this.thinkingTimer = null;
     this.isProcessing = false;                            // 是否正在執行消除動畫
     this.currentHint = null;                              // 當前提示
   }
@@ -69,12 +66,12 @@ export default class GameModel {
     }
 
     /* Testing */
-    this.cells[1][1].type = CELL_TYPE.BIRD;
-    this.cells[1][1].status = CELL_STATUS.BIRD;
-    this.cells[1][2].type = CELL_TYPE.BIRD;
-    this.cells[1][2].status = CELL_STATUS.BIRD;
-    this.cells[2][1].status = CELL_STATUS.COLUMN;
-    this.cells[2][2].status = CELL_STATUS.WRAP;
+    //this.cells[1][1].type = CELL_TYPE.BIRD;
+    //this.cells[1][1].status = CELL_STATUS.BIRD;
+    //this.cells[1][2].type = CELL_TYPE.BIRD;
+    //this.cells[1][2].status = CELL_STATUS.BIRD;
+    //this.cells[2][1].status = CELL_STATUS.COLUMN;
+    //this.cells[2][2].status = CELL_STATUS.WRAP;
   }
 
   mock() {
@@ -777,20 +774,11 @@ export default class GameModel {
     if (!this.isGameOver && this.movesLeft === 0) {
       this.endGame();
     }
-    else {
-      this.startThinkingTimer();
-    }
   }
 
   endGame() {
     this.isGameOver = true;
     console.log("遊戲結束！步數已用完。");
-    
-    // 停止思考時間計時器
-    if (this.thinkingTimer) {
-      clearInterval(this.thinkingTimer);
-      this.thinkingTimer = null; // 設為 null 確保不會再被使用
-    }
     
     // 確保所有金幣計算完成
     setTimeout(() => {
@@ -803,12 +791,6 @@ export default class GameModel {
 
   levelComplete() {
     this.isGameOver = true;
-  
-    // 停止思考時間計時器
-    if (this.thinkingTimer) {
-      clearInterval(this.thinkingTimer);
-      this.thinkingTimer = null;
-    }
   
     console.log(`已通關，剩餘步數(${this.movesLeft})轉成金幣(${this.movesLeft * 15})`);
   
@@ -843,58 +825,6 @@ export default class GameModel {
 
   earnCoin(amount) {
     this.setCoin(this.getCoin() + amount);
-  }
-
-  startThinkingTimer() {
-    if (this.goalLeft === 0 || this.isGameOver) {
-        return;
-    }
-
-    if (this.thinkingTimer) {
-        clearInterval(this.thinkingTimer);
-    }
-    this.currentThinkingTime = this.thinkingTimeLimit;
-
-    this.thinkingTimer = setInterval(() => {
-        if (this.goalLeft === 0) {
-            clearInterval(this.thinkingTimer);
-            return;
-        }
-
-        this.currentThinkingTime--;
-
-        let thinkingTimeView = cc.find("Canvas/ThinkingTimeLabel").getComponent("ThinkingTimeView");
-        if (thinkingTimeView) {
-            thinkingTimeView.updateThinkingTime();
-        }
-
-        if (this.currentThinkingTime <= 0) {
-            this.handleThinkingTimeout();
-        }
-    }, 1000);
-  }
-
-  handleThinkingTimeout() {
-    if (this.goalLeft === 0 || this.isGameOver) {
-        clearInterval(this.thinkingTimer);
-        return;
-    }
-
-    console.log("時間到，自動消除當下提示的組合...");
-
-    const currentHint = this.currentHint; 
-    if (currentHint && currentHint.swapPositions.length >= 2) {
-        console.log("自動消除提示的組合:", currentHint.swapPositions);
-        
-        const pos1 = cc.v2(currentHint.swapPositions[0][1], currentHint.swapPositions[0][0]);
-        const pos2 = cc.v2(currentHint.swapPositions[1][1], currentHint.swapPositions[1][0]);
-        
-        this.gameController.autoSelectCells(pos1, pos2);
-    } else {
-        console.log("當前提示沒有有效的消除組合");
-    }
-
-    clearInterval(this.thinkingTimer);
   }
 
   // return { value: [hints], hint: [crushCells] }

@@ -21,6 +21,10 @@ cc.Class({
       default: null,
       type: cc.Node
     },
+    thinkingTimer: {
+      default: null,
+      type: cc.Node,
+    },
     goalLeftLabel: {
       default: null,
       type: cc.Node
@@ -44,18 +48,23 @@ cc.Class({
     if (!this.goal) {
       this.goal = cc.find("Canvas/Goal");
     }
+    if (!this.thinkingTimer) {
+      this.thinkingTimer = cc.find("Canvas/ThinkingTimeLabel");
+    }
 
     let audioButton = this.node.parent.getChildByName('audioButton')
     audioButton.on('click', this.callback, this)
     this.gameModel = new GameModel();
     this.gameModel.setGameController(this);
-    this.gameModel.init(5);
+    this.gameModel.init(4);
     this.gridScript = this.grid.getComponent("GridView");
     this.gridScript.setController(this);
     this.gridScript.initWithCellModels(this.gameModel.getCells());
     this.audioSource = cc.find('Canvas/GameScene')._components[1].audio;
     this.hintTimerScript = this.hintTimer.getComponent("HintTimer");
     this.hintTimerScript.setGameController(this);
+    this.thinkingTimerScript = this.thinkingTimer.getComponent("ThinkingTimer");
+    this.thinkingTimerScript.setGameController(this);
     this.goalLeftLabelScript = this.goalLeftLabel.getComponent("GoalLeftView");
     this.goalLeftLabelScript.setGameController(this);
     this.goalTypeImgScript = this.goal.getComponent("GoalTypeImgView");
@@ -63,10 +72,13 @@ cc.Class({
 
   start: function() {
     this.gameModel.nextGoal();
-    this.gameModel.startThinkingTimer();
     this.gridScript.setHints(this.getHints());
     this.hintTimerScript.setInterval(2);
     this.hintTimerScript.setWorkable(true);
+    
+    // 設置思考計時器
+    this.thinkingTimerScript.setTimeLimit(10); // 設置10秒思考時間
+    this.thinkingTimerScript.setWorkable(true); // 啟動計時器
   },
 
   callback: function () {
@@ -111,6 +123,7 @@ cc.Class({
 
   consumeMove() {
     this.hintTimerScript.setWorkable(false);
+    this.thinkingTimerScript.setWorkable(false);
   },
 
   logicCalculateEnd: function() {
@@ -119,6 +132,7 @@ cc.Class({
 
   animeEnd: function() {
     this.hintTimerScript.setWorkable(true);
+    this.thinkingTimerScript.setWorkable(true);
   },
 
   autoSelectCells: function (pos1, pos2) {
@@ -132,12 +146,6 @@ cc.Class({
     
     // 停止所有計時器
     if (this.gameModel) {
-        // 停止遊戲中的思考時間計時器
-        if (this.gameModel.thinkingTimer) {
-            clearInterval(this.gameModel.thinkingTimer);
-            this.gameModel.thinkingTimer = null;
-        }
-        
         // 標記遊戲結束，避免任何進行中的邏輯
         this.gameModel.isGameOver = true;
     }
@@ -145,6 +153,11 @@ cc.Class({
     // 停止提示計時器
     if (this.hintTimerScript) {
         this.hintTimerScript.setWorkable(false);
+    }
+
+    // 停止思考計時器
+    if (this.thinkingTimerScript) {
+      this.thinkingTimerScript.setWorkable(false);
     }
     
     // 清除所有運行中的動作
@@ -166,6 +179,8 @@ cc.Class({
     if (this.audioSource && this.audioSource._state === 1) {
         this.audioSource.pause();
     }
+
+    cc.loader.onProgress = null; // 清除載入進度回調
     
     // 預加載登入場景，然後載入
     try {
@@ -245,5 +260,18 @@ cc.Class({
 
   startThinkingTimer() {
     this.gameModel.startThinkingTimer();
-  }
+  },
+
+  thinkingTimerTrigger: function() {
+    if (!this.gameModel.isGameOver && !this.gameModel.isProcessing) {
+        // 時間到自動消除提示的組合
+        const currentHint = this.gameModel.currentHint;
+        if (currentHint && currentHint.swapPositions.length >= 2) {
+            console.log(`思考時間到，自動執行提示的消除操作`);
+            const pos1 = cc.v2(currentHint.swapPositions[0][1], currentHint.swapPositions[0][0]);
+            const pos2 = cc.v2(currentHint.swapPositions[1][1], currentHint.swapPositions[1][0]);
+            this.autoSelectCells(pos1, pos2);
+        }
+    }
+  },
 });

@@ -904,6 +904,8 @@ cc.Class({
         try {
             // 清理當前場景中的任何計時器或動作
             this.cleanupCurrentScene();
+
+            cc.loader.onProgress = null; // 清除載入進度回調
             
             // 預加載登入場景
             cc.director.preloadScene("Login", () => {
@@ -911,6 +913,8 @@ cc.Class({
             });
         } catch (e) {
             console.error("載入登入場景失敗：", e);
+
+            cc.loader.onProgress = null; // 清除載入進度回調
             
             // 如果預加載失敗，直接嘗試載入
             try {
