@@ -209,7 +209,8 @@ cc.Class({
         this.disableTouch(this.getPlayAniTime(changeModels), this.getStep(effectsQueue));
         this.updateView(changeModels);
         this.controller.cleanCmd(); 
-        if(changeModels.length >= 2){
+        if(changeModels.length >= 2 && effectsQueue && effectsQueue.length > 0){
+            // 只有當有效消除時才更新選中狀態和播放交換音效
             this.updateSelect(cc.v2(-1,-1));
             this.audioUtils.playSwap();
         }

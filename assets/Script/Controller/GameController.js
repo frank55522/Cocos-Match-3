@@ -88,8 +88,13 @@ cc.Class({
   },
 
   selectCell: function (pos) {
+    if (this.isGameOver) {
+      console.log("遊戲已結束，無法進行操作。");
+      return [[], []];
+    }
     return this.gameModel.selectCell(pos);
   },
+
   cleanCmd: function () {
     this.gameModel.cleanCmd();
   },

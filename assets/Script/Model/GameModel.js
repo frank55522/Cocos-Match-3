@@ -208,7 +208,6 @@ export default class GameModel {
       return [[], []];
     }
 
-    this.gameController.consumeMove();
     let curClickCell = this.cells[pos.y][pos.x]; //当前点击的格子
     let lastClickCell = this.cells[lastPos.y][lastPos.x]; // 上一次点击的格式
     this.exchangeCell(lastPos, pos);
@@ -229,6 +228,7 @@ export default class GameModel {
       return [this.changeModels];
     }
     else {
+      this.gameController.consumeMove();
       this.movesLeft--;
       console.log(`剩餘步數: ${this.movesLeft}`);
       this.lastPos = cc.v2(-1, -1);
