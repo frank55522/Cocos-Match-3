@@ -13,7 +13,8 @@ function Toast(
   {
     gravity = "CENTER",
     duration = 1,
-    bg_color = cc.color(102, 102, 102, 200)
+    bg_color = cc.color(102, 102, 102, 200),
+    text_color = cc.color(255, 255, 255)
   } = {}
 ) {
   // 如果有活動中的 Toast，先將其移除
@@ -36,6 +37,7 @@ function Toast(
   textLabel.verticalAlign = cc.Label.VerticalAlign.CENTER;
   textLabel.fontSize = 30;
   textLabel.string = text;
+  textLabel.node.color = text_color;
 
   // 當文本寬度過長時，設置為自動換行格式
   if (text.length * textLabel.fontSize > (width * 3) / 5) {

@@ -1331,6 +1331,7 @@ cc.Class({
         // 找到登入按鈕和排行榜按鈕
         let loginButton = canvasNode.getChildByName('loginButton');
         let leaderboardButton = canvasNode.getChildByName('LeaderboardButton');
+        let HowToPlayButton = canvasNode.getChildByName('HowToPlayButton');
         
         // 保存按鈕原始狀態並禁用
         if (loginButton) {
@@ -1356,6 +1357,18 @@ cc.Class({
                 leaderboardButton.opacity = 120;
             }
         }
+
+        if (HowToPlayButton) {
+            let buttonComp = HowToPlayButton.getComponent(cc.Button);
+            if (buttonComp) {
+                HowToPlayButton._originalInteractable = buttonComp.interactable;
+                buttonComp.interactable = false;
+                
+                // 降低透明度
+                HowToPlayButton._originalOpacity = HowToPlayButton.opacity;
+                HowToPlayButton.opacity = 120;
+            }
+        }
     },
 
     // 恢復按鈕
@@ -1363,6 +1376,7 @@ cc.Class({
         // 找到登入按鈕和排行榜按鈕
         let loginButton = canvasNode.getChildByName('loginButton');
         let leaderboardButton = canvasNode.getChildByName('LeaderboardButton');
+        let HowToPlayButton = canvasNode.getChildByName('HowToPlayButton');
         
         // 恢復按鈕原始狀態
         if (loginButton) {
@@ -1385,6 +1399,18 @@ cc.Class({
                 // 恢復透明度
                 if (leaderboardButton._originalOpacity !== undefined) {
                     leaderboardButton.opacity = leaderboardButton._originalOpacity;
+                }
+            }
+        }
+
+        if (HowToPlayButton) {
+            let buttonComp = HowToPlayButton.getComponent(cc.Button);
+            if (buttonComp && HowToPlayButton._originalInteractable !== undefined) {
+                buttonComp.interactable = HowToPlayButton._originalInteractable;
+                
+                // 恢復透明度
+                if (HowToPlayButton._originalOpacity !== undefined) {
+                    HowToPlayButton.opacity = HowToPlayButton._originalOpacity;
                 }
             }
         }

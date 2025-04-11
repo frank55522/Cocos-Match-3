@@ -11,7 +11,7 @@ cc.Class({
         },
         
         timeLimit: {
-            default: 10,
+            default: 15,
         }
     },
 
@@ -34,6 +34,13 @@ cc.Class({
             // 更新顯示
             if (this.timeLabel) {
                 this.timeLabel.string = `倒數時間: ${Math.ceil(this.currentTime)} 秒`;
+                
+                // 如果剩餘時間小於等於 5 秒，顏色變紅
+                if (Math.ceil(this.currentTime) <= 5) {
+                    this.timeLabel.node.color = cc.Color.RED;
+                } else {
+                    this.timeLabel.node.color = cc.Color.WHITE;
+                }
             }
             
             if (this.currentTime <= 0) {

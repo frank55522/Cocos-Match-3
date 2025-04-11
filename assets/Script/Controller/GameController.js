@@ -33,13 +33,17 @@ cc.Class({
       default: null,
       type: cc.Node,
       tooltip: "包含所有目標圖片的父節點"
+    },
+    comboLabel: {
+      default: null,
+      type: cc.Node,
+      tooltip: "顯示連擊數的標籤"
     }
   },
 
   // use this for initialization
   onLoad: function () {
     if (!this.audioSource) {
-      // 動態查找並初始化
       this.audioSource = cc.find("Canvas/AudioSource").getComponent(cc.AudioSource);
     }
     if (!this.goalLeftLabel) {
@@ -50,6 +54,9 @@ cc.Class({
     }
     if (!this.thinkingTimer) {
       this.thinkingTimer = cc.find("Canvas/ThinkingTimeLabel");
+    }
+    if (!this.comboLabel) {
+      this.comboLabel = cc.find("Canvas/ComboLabel");
     }
 
     let audioButton = this.node.parent.getChildByName('audioButton')
@@ -68,6 +75,15 @@ cc.Class({
     this.goalLeftLabelScript = this.goalLeftLabel.getComponent("GoalLeftView");
     this.goalLeftLabelScript.setGameController(this);
     this.goalTypeImgScript = this.goal.getComponent("GoalTypeImgView");
+    
+    // 初始化 comboLabel
+    if (this.comboLabel) {
+      this.comboLabelComponent = this.comboLabel.getComponent(cc.Label);
+      if (this.comboLabelComponent) {
+        this.comboLabelComponent.string = "";  // 初始時不顯示
+        this.comboLabel.opacity = 0;  // 初始時隱藏
+      }
+    }
   },
 
   start: function() {
@@ -77,7 +93,7 @@ cc.Class({
     this.hintTimerScript.setWorkable(true);
     
     // 設置思考計時器
-    this.thinkingTimerScript.setTimeLimit(10); // 設置10秒思考時間
+    this.thinkingTimerScript.setTimeLimit(15); // 設置15秒思考時間
     this.thinkingTimerScript.setWorkable(true); // 啟動計時器
   },
 
@@ -278,5 +294,62 @@ cc.Class({
             this.autoSelectCells(pos1, pos2);
         }
     }
+  },
+
+  getCurrentThinkingTime: function() {
+    if (this.thinkingTimerScript) {
+        return Math.ceil(this.thinkingTimerScript.getCurrentTime());
+    }
+    return 0;
+  },
+
+  showCombo: function(comboCount) {
+    if (!this.comboLabel || !this.comboLabelComponent) return;
+    
+    // 停止當前可能正在運行的動作
+    this.comboLabel.stopAllActions();
+    
+    // 設置 Combo 文字
+    this.comboLabelComponent.string = "Combo " + comboCount + "!";
+    
+    // 重置屬性
+    this.comboLabel.opacity = 255;
+    this.comboLabel.scale = 0;  // 從0開始，實現彈出效果
+    
+    // 根據 combo 數量設置不同顏色
+    if (comboCount >= 10) {
+        this.comboLabel.color = cc.color(255, 0, 0);  // 紅色
+    } else if (comboCount >= 5) {
+        this.comboLabel.color = cc.color(255, 165, 0);  // 橙色
+    } else {
+        this.comboLabel.color = cc.color(255, 255, 255);  // 白色
+    }
+    
+    // 創建更生動的動畫效果
+    const popIn = cc.scaleTo(0.2, 1.3).easing(cc.easeBackOut());  // 彈出效果
+    const scaleNormal = cc.scaleTo(0.1, 1.0);  // 回到正常大小
+    const stay = cc.delayTime(0.8);  // 停留時間
+    
+    // 創建淡出效果
+    const fadeOut = cc.fadeTo(0.3, 0);
+    
+    // 重置位置的回調
+    const resetPosition = cc.callFunc(() => {
+        if (this.comboLabel) {
+            this.comboLabel.y = this.comboLabel.y + 0;  // 重置 y 坐標
+        }
+    });
+    
+    // 組合動畫序列
+    const sequence = cc.sequence(
+      popIn,                         // 彈出
+      scaleNormal,                   // 恢復正常大小
+      stay,                          // 停留
+      fadeOut,                       // 淡出
+      resetPosition                  // 重置位置
+    );
+    
+    // 運行動畫序列
+    this.comboLabel.runAction(sequence);
   },
 });

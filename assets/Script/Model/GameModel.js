@@ -331,12 +331,15 @@ export default class GameModel {
         let hasNextCrush = nextCheckPoint.length > 0;
 
         setTimeout(() => {
-            this.earnCoinsByCrush(copyTotalCrushed);
-
-            if (copyCycleCount > 1 && hasNextCrush) {
-                Toast(`Combo ${copyCycleCount}!`, { duration: 1, gravity: "CENTER" });
-                this.earnCoinsByStep(copyCycleCount);
-            }
+          this.earnCoinsByCrush(copyTotalCrushed);
+      
+          if (copyCycleCount > 1 && hasNextCrush) {
+              // 使用 comboLabel 而非 Toast
+              if (this.gameController) {
+                  this.gameController.showCombo(copyCycleCount);
+              }
+              this.earnCoinsByStep(copyCycleCount);
+          }
         }, this.curTime * 1000);
 
         checkPoint = nextCheckPoint;
@@ -1024,11 +1027,12 @@ export default class GameModel {
     this.earnCoin(amount);
     console.log(`特殊組合[${comboName}]獎勵 ${amount} 金幣！`);
     
-    // 顯示特殊獎勵提示
     const Toast = require('../Utils/Toast');
-    Toast(`特殊組合：${comboName}\n獎勵 ${amount} 金幣！`, { 
-      duration: 1.5, 
-      gravity: "CENTER" 
+    Toast(`${comboName} +${amount} 金幣！`, { 
+        duration: 2, 
+        gravity: "CENTER",
+        bg_color: cc.color(0, 0, 0, 200),
+        text_color: cc.color(255, 215, 0) // 金色文字
     });
   }
 }
