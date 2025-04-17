@@ -29,6 +29,7 @@ cc.Class({
         this.isCanMove = true;
         this.isInPlayAni = false; // 是否在播放中
         this.hints = [];
+        this.hintCells = []; // 存儲當前正在顯示提示的方塊
     },
     setController: function(controller){
         this.controller = controller;
@@ -213,6 +214,9 @@ cc.Class({
             // 只有當有效消除時才更新選中狀態和播放交換音效
             this.updateSelect(cc.v2(-1,-1));
             this.audioUtils.playSwap();
+            
+            // 當玩家進行有效操作時停止提示
+            this.clearHints();
         }
         else{
             this.updateSelect(cellPos);
@@ -228,26 +232,61 @@ cc.Class({
         this.hints = hints;
     },
 
+    // 清除所有提示
+    clearHints: function() {
+        // 停止所有當前的提示效果
+        if (this.hintCells && this.hintCells.length > 0) {
+            for (const cellView of this.hintCells) {
+                if (cellView && cellView.isValid) {
+                    const cellScript = cellView.getComponent("CellView");
+                    if (cellScript) {
+                        cellScript.stopHintEffect();
+                    }
+                }
+            }
+            this.hintCells = [];
+        }
+    },
+
     showHint: function() {
+        // 先清除現有提示
+        this.clearHints();
+        
         if (!this.hints.length) {
             console.log("No Solution");
             return;
         }
-
-        /* Testing */
-        // console.log(this.hints);
-        // for (const hint of this.hints) {
-        //     console.log(hint);
-        // }
-
+    
+        // 隨機選擇一個提示
         let randomIndex = Math.floor(Math.random() * this.hints.length);
         this.controller.gameModel.currentHint = this.hints[randomIndex];
-        for (const [row, col] of this.hints[randomIndex].crushPositions) {
-            // console.log([row, col]);
-            let blinkAction = cc.blink(2, 6); // 2 秒內閃爍 6 次
-            this.cellViews[row][col].runAction(blinkAction);
+        
+        // 為提示相關的方塊顯示高亮邊框
+        this.hintCells = [];
+        
+        // 獲取將被消除的方塊類型
+        let crushPositions = this.hints[randomIndex].crushPositions;
+        if (crushPositions.length >= 3) {
+            // 獲取第一個方塊的類型（假定所有將被消除的方塊類型相同）
+            let firstPos = crushPositions[0];
+            let targetType = this.controller.gameModel.cells[firstPos[0]][firstPos[1]].type;
+            
+            // 只高亮顯示相同類型的方塊（即實際會消除的方塊）
+            for (const [row, col] of crushPositions) {
+                if (this.controller.gameModel.cells[row][col].type === targetType) {
+                    const cellView = this.cellViews[row][col];
+                    if (cellView && cellView.isValid) {
+                        const cellScript = cellView.getComponent("CellView");
+                        if (cellScript) {
+                            cellScript.startHintEffect();
+                            this.hintCells.push(cellView);
+                        }
+                    }
+                }
+            }
         }
-        // console.log(`hint swap: ${this.hints[randomIndex].swapPositions}`);
+        
+        console.log(`顯示提示，交換位置: ${this.hints[randomIndex].swapPositions}`);
     },
 
     goalLeftMinus: function() {

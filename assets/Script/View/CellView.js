@@ -13,7 +13,29 @@ cc.Class({
     // use this for initialization
     onLoad: function () {
         this.isSelect = false;
+        
+        // 創建一個用於提示效果的邊框節點
+        this.hintBorder = new cc.Node("HintBorder");
+        this.hintBorder.parent = this.node;
+        
+        // 為邊框添加圖形組件
+        let graphics = this.hintBorder.addComponent(cc.Graphics);
+        
+        // 設置較寬的邊框線寬，使其更明顯
+        graphics.lineWidth = 6;
+        
+        // 使用鮮豔的紅色，在任何背景下都非常醒目
+        graphics.strokeColor = cc.color(255, 0, 0, 255); // 鮮紅色
+        
+        // 繪製略大於方塊的矩形
+        const borderSize = Math.min(CELL_WIDTH, CELL_HEIGHT) - 8;
+        graphics.rect(-borderSize/2, -borderSize/2, borderSize, borderSize);
+        graphics.stroke();
+        
+        // 初始時隱藏邊框
+        this.hintBorder.active = false;
     },
+    
     initWithModel: function(model){
         this.model = model;
         var x = model.startX;
@@ -28,6 +50,7 @@ cc.Class({
             animation.play(model.status);
         }
     },
+    
     setGridViewScript: function(gridViewScript) {
         this.gridViewScript = gridViewScript;
     },
@@ -117,23 +140,63 @@ cc.Class({
         this.isSelect = flag;
     },
 
-    // 讓 Cell 閃爍
-    startBlinking: function() {
-        if (this.blinkAction) return; // 如果已經在閃爍，就不重複執行
+    // 啟動更醒目的提示效果
+    startHintEffect: function() {
+        if (this.hintAction) return; // 如果已經有提示動畫正在運行則不重複開始
         
-        let fadeOut = cc.fadeTo(0.5, 100);  // 透明度降低
-        let fadeIn = cc.fadeTo(0.5, 255);   // 透明度恢復
-        let blinkSequence = cc.sequence(fadeOut, fadeIn); // 透明度變化動畫
-        this.blinkAction = this.node.runAction(cc.repeatForever(blinkSequence)); // 讓動畫不斷執行
-        setTimeout(() => { this.stopBlinking(); }, 2000);
+        // 確保邊框可見
+        this.hintBorder.active = true;
+        
+        // 重置邊框透明度和縮放
+        this.hintBorder.opacity = 255;
+        this.hintBorder.scale = 1.0;
+        
+        // 建立更醒目的邊框動畫：縮放 + 閃爍效果
+        const scaleUp = cc.scaleTo(0.5, 1.1);
+        const scaleDown = cc.scaleTo(0.5, 0.9);
+        const fadeOut = cc.fadeTo(0.5, 180);
+        const fadeIn = cc.fadeTo(0.5, 255);
+        
+        // 組合動畫：同時進行縮放和透明度變化
+        const pulseAction = cc.spawn(
+            cc.sequence(scaleUp, scaleDown),
+            cc.sequence(fadeOut, fadeIn)
+        );
+        
+        // 重複執行動畫
+        this.hintAction = this.hintBorder.runAction(cc.repeatForever(pulseAction));
+        
+        // 設置自動停止計時器
+        this.hintTimer = setTimeout(() => {
+            this.stopHintEffect();
+        }, 4000); // 4秒後自動停止提示
     },
 
-    // 停止閃爍
-    stopBlinking: function() {
-        if (this.blinkAction) {
-            this.node.stopAction(this.blinkAction);
-            this.blinkAction = null;
-            this.node.opacity = 255; // 恢復原本透明度
+    // 停止高亮邊框提示效果
+    stopHintEffect: function() {
+        // 清除計時器
+        if (this.hintTimer) {
+            clearTimeout(this.hintTimer);
+            this.hintTimer = null;
         }
+        
+        // 停止動畫
+        if (this.hintAction) {
+            this.hintBorder.stopAction(this.hintAction);
+            this.hintAction = null;
+        }
+        
+        // 隱藏邊框
+        this.hintBorder.active = false;
+    },
+
+    // 替換舊的閃爍方法，調用新的提示效果
+    startBlinking: function() {
+        this.startHintEffect();
+    },
+
+    // 替換舊的停止閃爍方法
+    stopBlinking: function() {
+        this.stopHintEffect();
     }
 });
