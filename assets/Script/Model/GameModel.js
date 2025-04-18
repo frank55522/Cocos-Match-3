@@ -66,12 +66,14 @@ export default class GameModel {
     }
 
     /* Testing */
-    //this.cells[1][1].type = CELL_TYPE.BIRD;
-    //this.cells[1][1].status = CELL_STATUS.BIRD;
-    //this.cells[1][2].type = CELL_TYPE.BIRD;
-    //this.cells[1][2].status = CELL_STATUS.BIRD;
-    //this.cells[2][1].status = CELL_STATUS.COLUMN;
-    //this.cells[2][2].status = CELL_STATUS.WRAP;
+    // this.cells[1][1].type = CELL_TYPE.BIRD;
+    // this.cells[1][1].status = CELL_STATUS.COLUMN;
+    // this.cells[1][2].type = CELL_TYPE.BIRD;
+    // this.cells[1][2].status = CELL_STATUS.WRAP;
+    // this.cells[2][1].status = CELL_STATUS.WRAP;
+    // this.cells[2][2].status = CELL_STATUS.WRAP;
+    // this.cells[2][4].type = CELL_TYPE.BIRD;
+    // this.cells[2][4].status = CELL_STATUS.BIRD;
   }
 
   mock() {
@@ -523,49 +525,63 @@ export default class GameModel {
 
   straightPlusStraight(model1, model2) {
     let bombPos = {x: model1.x, y: model1.y};
+    let bombModels = [];
+    
+    this.crushCell(model1.x, model1.y, false, 1);
+    this.crushCell(model2.x, model2.y, false, 1);
     
     for (let col = 1; col <= GRID_WIDTH; col++) {
+        if (col === model1.x || col === model2.x)
+            continue;
+
         if (this.cells[bombPos.y][col]) {
             if (this.cells[bombPos.y][col].status != CELL_STATUS.COMMON) {
-                this.crushCell(col, bombPos.y, false, 1);
-            } else {
-                this.crushCell(col, bombPos.y, false, 1);
+                bombModels.push(this.cells[bombPos.y][col]);
             }
+            this.crushCell(col, bombPos.y, false, 1);
         }
     }
     
     for (let row = 1; row <= GRID_HEIGHT; row++) {
+        if (row === model1.y || row === model2.y)
+            continue;
+
         if (this.cells[row][bombPos.x]) {
-            if (this.cells[row][bombPos.x].status != CELL_STATUS.COMMON && 
-                !(row === bombPos.y)) {
-                this.crushCell(bombPos.x, row, false, 1);
-            } else if (!(row === bombPos.y)) {
-                this.crushCell(bombPos.x, row, false, 1);
+            if (this.cells[row][bombPos.x].status != CELL_STATUS.COMMON) {
+                bombModels.push(this.cells[row][bombPos.x]);  
             }
+            this.crushCell(bombPos.x, row, false, 1);
         }
     }
     
     this.addRowBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
     this.addColBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
 
+    this.processBomb(bombModels, 1);
+
     // 獎勵 250 金幣
     this.earnSpecialComboBonusCoin(250, "直線+直線");
   }
 
   straightPlusWrap(model1, model2) {
-    let straightModel = model1.status === CELL_STATUS.LINE || model1.status === CELL_STATUS.COLUMN ? model1 : model2;
-    let wrapModel = model1.status === CELL_STATUS.WRAP ? model1 : model2;
+    let bombModels = [];
     let bombPos = {x: model1.x, y: model1.y};
+
+    this.crushCell(model1.x, model1.y, false, 1);
+    this.crushCell(model2.x, model2.y, false, 1);
     
     for (let col = 1; col <= GRID_WIDTH; col++) {
         for (let offset = -1; offset <= 1; offset++) {
             let row = bombPos.y + offset;
+            if (row === model1.y && col === model2.x ||
+                row === model2.y && col === model2.x)
+                continue;
+                
             if (row >= 1 && row <= GRID_HEIGHT && this.cells[row][col]) {
                 if (this.cells[row][col].status != CELL_STATUS.COMMON) {
-                    this.crushCell(col, row, false, 1);
-                } else {
-                    this.crushCell(col, row, false, 1);
+                    bombModels.push(this.cells[row][col]);
                 }
+                this.crushCell(col, row, false, 1);
             }
         }
     }
@@ -577,10 +593,9 @@ export default class GameModel {
                 let inHorizontalRange = Math.abs(row - bombPos.y) <= 1;
                 if (!inHorizontalRange || col !== bombPos.x || row !== bombPos.y) {
                     if (this.cells[row][col].status != CELL_STATUS.COMMON) {
-                        this.crushCell(col, row, false, 1);
-                    } else {
-                        this.crushCell(col, row, false, 1);
+                        bombModels.push(this.cells[row][col]);
                     }
+                    this.crushCell(col, row, false, 1);
                 }
             }
         }
@@ -592,6 +607,8 @@ export default class GameModel {
     this.addColBomb(this.curTime, cc.v2(bombPos.x+1, bombPos.y));
     this.addColBomb(this.curTime, cc.v2(bombPos.x, bombPos.y));
     this.addColBomb(this.curTime, cc.v2(bombPos.x-1, bombPos.y));
+
+    this.processBomb(bombModels, 1);
 
     // 獎勵 400 金幣
     this.earnSpecialComboBonusCoin(400, "直線+爆炸");
@@ -617,9 +634,18 @@ export default class GameModel {
   }
 
   wrapPlusWrap(model1, model2) {
+    let bombModels = [];
     let bombPos = {x: model1.x, y: model1.y};
+
+    this.crushCell(model1.x, model1.y, false, 1);
+    this.crushCell(model2.x, model2.y, false, 1);
+
     for (let row = 1; row <= GRID_HEIGHT; row++) {
         for (let col = 1; col <= GRID_WIDTH; col++) {
+            if (row === model1.y && col === model2.x ||
+                row === model2.y && col === model2.x)
+                continue;
+
             let chebyshevDist = Math.max(
                 Math.abs(col - bombPos.x),
                 Math.abs(row - bombPos.y)
@@ -627,13 +653,13 @@ export default class GameModel {
             
             if (chebyshevDist <= 2 && this.cells[row][col]) {
                 if (this.cells[row][col].status != CELL_STATUS.COMMON) {
-                    this.crushCell(col, row, false, 1);
-                } else {
-                    this.crushCell(col, row, false, 1);
+                    bombModels.push(this.cells[row][col]);
                 }
+                this.crushCell(col, row, false, 1);
             }
         }
     }
+    this.processBomb(bombModels, 1);
 
     // 獎勵 500 金幣
     this.earnSpecialComboBonusCoin(500, "爆炸+爆炸");
