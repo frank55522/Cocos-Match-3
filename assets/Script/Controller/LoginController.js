@@ -58,6 +58,11 @@ cc.Class({
     if (this.HowToPlayButton) {
       this.HowToPlayButton.node.on('click', this.onHowToPlayClick, this);
     }
+
+    // 設置玩家ID輸入框的最大長度
+    if (this.playerIdInput) {
+      this.playerIdInput.maxLength = 20;
+    }
   },
   
   onPlayerIdChanged(editbox) {
