@@ -60,36 +60,36 @@ cc.Class({
             leftIndex = cellType;
             break;
         case GOAL_TYPE.STRAIGHT:
-            leftIndex  = 7;
+            leftIndex  = 10;
             break;
         case GOAL_TYPE.WRAP:
-            leftIndex  = 8;
+            leftIndex  = 11;
             break;
         case GOAL_TYPE.BIRD:
             leftIndex  = 9;
             break;
         case GOAL_TYPE.STRAIGHT_PLUS_STRAIGHT:
-            leftIndex = 7;
-            rightIndex = 7;
+            leftIndex = 10;
+            rightIndex = 10;
             this.toggleRightImageAndPlus(true);
             break;
         case GOAL_TYPE.STRAIGHT_PLUS_WRAP:
-            leftIndex = 7;
-            rightIndex = 8;
+            leftIndex = 10;
+            rightIndex = 11;
             this.toggleRightImageAndPlus(true);
             break;
         case GOAL_TYPE.STRAIGHT_PLUS_BIRD:
-            leftIndex = 7;
+            leftIndex = 10;
             rightIndex = 9;
             this.toggleRightImageAndPlus(true);
             break;
         case GOAL_TYPE.WRAP_PLUS_WRAP:
-            leftIndex = 8;
-            rightIndex = 8;
+            leftIndex = 11;
+            rightIndex = 11;
             this.toggleRightImageAndPlus(true);
             break;
         case GOAL_TYPE.WRAP_PLUS_BIRD:
-            leftIndex = 8;
+            leftIndex = 11;
             rightIndex = 9;
             this.toggleRightImageAndPlus(true);
             break;
