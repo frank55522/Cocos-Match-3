@@ -12,29 +12,36 @@
 
 ### 登錄頁面
 ![登錄頁面](docs/images/login.png)
+
 *精美的登錄界面，支援自訂玩家ID並可直接查看排行榜和玩法說明*
 
 ### 排行榜系統
 ![首頁排行榜](docs/images/leaderboard1.png)
+
 *首頁排行榜：支援線上即時更新，顯示玩家排名和分數*
 
 ![結算排行榜](docs/images/leaderboard2.png)
+
 *遊戲結算排行榜：遊戲結束後可立即查看最新排名，支援刷新功能*
 
 ### 玩法說明
 ![玩法說明](docs/images/howtoplay.png)
+
 *詳細的遊戲教學界面，幫助新玩家快速上手*
 
 ### 遊戲畫面
 ![遊戲畫面](docs/images/gameplay.png)
+
 *完整的遊戲界面：顯示目標、剩餘步數、金幣系統、高亮提示和倒數計時器*
 
 ### 特殊方塊合併效果
 ![特殊效果](docs/images/special-effects.png)
+
 *特殊方塊合併產生的視覺效果*
 
 ### combo顯示
 ![combo顯示](docs/images/combo.png)
+
 *combo系統的視覺效果：1-4次為白色、5-9次為橙色、10次以上為紅色*
 
 ## 完整遊戲展示
